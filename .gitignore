@@ -1,0 +1,4 @@
+H*.xml
+*.pyc
+*~
+!BuildFile.xml
