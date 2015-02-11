@@ -18,20 +18,9 @@ process.hcal_db_producer = cms.ESProducer("HcalDbProducer",
 )
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-process.GlobalTag.globaltag = "GR_P_V42_AN4::All"
-#Commented out as I am using customized GT couple of lines below
-#process.es_prefer_GlobalTag = cms.ESPrefer('PoolDBESSource','GlobalTag')
-#process.prefer("GlobalTag")
-
-### Read the latest HCAL Emap
-process.GlobalTag.toGet = cms.VPSet(
-    cms.PSet(record = cms.string("HcalElectronicsMapRcd"),
-             tag = cms.string("HcalElectronicsMap_v7.04_hlt"),
-             #connect = cms.untracked.string("frontier://FrontierProd/CMS_COND_31X_GLOBALTAG")
-             connect = cms.untracked.string("frontier://PromptProd/CMS_COND_31X_HCAL")
-             )
-    )
-###
+process.GlobalTag.globaltag = "GR_P_V49::All"
+process.es_prefer_GlobalTag = cms.ESPrefer('PoolDBESSource','GlobalTag')
+process.prefer("GlobalTag")
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
 
