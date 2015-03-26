@@ -17,56 +17,33 @@ process.hcal_db_producer = cms.ESProducer("HcalDbProducer",
    file = cms.untracked.string('')
 )
 
-process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-process.GlobalTag.globaltag = "GR_P_V49::All"
-process.es_prefer_GlobalTag = cms.ESPrefer('PoolDBESSource','GlobalTag')
-process.prefer("GlobalTag")
+# Global tag
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
+from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'GR_P_V50', '')
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
+# New emap
+process.es_pool = cms.ESSource("PoolDBESSource",
+    process.CondDBSetup,
+    timetype = cms.string('runnumber'),
+    toGet = cms.VPSet(
+        cms.PSet(
+            record = cms.string("HcalElectronicsMapRcd"),
+            tag = cms.string("HcalElectronicsMap_v7.00_offline")
+        )
+    ),
+    connect = cms.string('frontier://FrontierProd/CMS_CONDITIONS'),
+    authenticationMethod = cms.untracked.uint32(0)
+)
+process.es_prefer_es_pool = cms.ESPrefer( "PoolDBESSource", "es_pool" )
+
+
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = cms.Source("HcalTBSource",
     fileNames = cms.untracked.vstring(
-#This run was taken with DB pedestals
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_218117.root'
-
-#This run was taken with v1 tuned pedestals
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_218287.root'
-
-#This run was taken with v2 tuned pedestals
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_218363.root'
-
-#This run was taken with v3 tuned pedestals
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_218465.root'
-
-#This run was taken with v4 tuned pedestals
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_218469.root'
-
-#This run was taken with v5 tuned pedestals
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_218503.root'
-
-#This run was taken with v6 tuned pedestals
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_218518.root'                                                                
-#28/03/2014
-#This run was taken with v7 tuned pedestals -- HO/Peds
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_220222.root'
-
-#This run was taken with v8 tuned pedestals -- HO/Peds
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_220232.root'
-
-#This run was taken with v9 tuned pedestals -- HO/Peds
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_220244.root'                                                                                                
-#This run was taken with v10 tuned pedestals -- HO/Peds
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_220262.root'                                                                                                
-#This run was taken with v11 tuned pedestals -- HO/Peds
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_220263.root'                                                                                                
-#This run was taken with v12 tuned pedestals -- HO/Peds
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_220418.root'
-
-#This run was taken with v13 tuned pedestals -- HO/Peds
-#       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_220425.root'
-
-#This run was taken with v14 tuned pedestals -- HO/Peds
-       'file:/afs/cern.ch/user/k/kkaadze/dataHOUSC/USC_220426.root'                                                                                                                                
+        # v1: input pedestals are default
+        "root://eoscms//eos/cms/store/user/eberry/HcalPedestalTuning/USC_238931.root"
    )
 )
 
@@ -98,7 +75,7 @@ process.hcalDigis = cms.EDProducer("HcalRawToDigi",
 process.pedTuner = cms.EDAnalyzer('HcalPedestalTuning',
     debug              = cms.int32(0),  
     digisName          = cms.string("hcalDigis"),
-    mapIOV             = cms.int32(5),
+    mapIOV             = cms.int32(7),
     tunePedestals      = cms.bool(True),
     pathToOldXMLBricks = cms.untracked.string('Old_HBHEHF'),
     xmlBricksOutputDir = cms.untracked.string('New_HBHEHF'),
