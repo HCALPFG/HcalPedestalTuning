@@ -1,11 +1,35 @@
 #------------------------------------------	
 #	Hcal PFG script
-#	Description:
+#	Description :
 #		Compares Pedestals and Produces Stats
+#   Author : Viktor Khristenko
+#            (victor-khristenko@uiowa.edu)
+#------------------------------------------	
+# 
+# Usage 
+# $ python ped_compare.py [ped file1] [ped file2] [output root file]  
+# 
+#   file1 : pedestal table file 1 with full path  
+#   file2 : pedestal table file 2 with full path 
+#   output root file : output root file with full path 
+#
+#------------------------------------------	
+#
+# This script compares only the channels that exist in both files.
+# If a channel exists in one file while not in the other file, 
+# this channel is excluded in comparison.
+#
+# The output root file will contatin (for each subdetector)
+#   - 1D(as a function of ADC) and 2D(ieta vs iphi) ratio of mean for each cap (file1/file2)
+#   - 1D(as a function of ADC) and 2D(ieta vs iphi) ratio of sigma for each cap (file2/file2)
+#   - summary of ratios
+#
 #------------------------------------------	
 
 import sys, copy
 import ROOT as rr
+
+if len(sys.argv)<4: sys.exit('You need more argements! \nThis is usage : \n\n    python ped_compare.py [ped file1] [ped file2] [output root file] \n')
 
 
 #------------------------------------------	
