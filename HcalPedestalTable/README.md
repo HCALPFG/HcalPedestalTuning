@@ -1,4 +1,4 @@
-# HCAL/Pedestal
+# HcalPedestalTuning/HcalPedestalTable 
 
 Code for making pedestal table using PFGntuple. 
 
