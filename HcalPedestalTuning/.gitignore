@@ -1,0 +1,7 @@
+*.txt
+*.root
+*.log
+
+OldXML/*
+NewXML/*
+FinalXML/*
