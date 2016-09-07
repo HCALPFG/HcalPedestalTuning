@@ -4,4 +4,6 @@
 
 OldXML/*
 NewXML/*
-FinalXML/*
+FinalXML/* 
+
+python/*.pyc

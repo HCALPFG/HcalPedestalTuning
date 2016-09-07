@@ -1,1 +1,0 @@
-diff $1.xml ../Old_HBHEHF/$1.xml
