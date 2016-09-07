@@ -2,8 +2,4 @@
 *.root
 *.log
 
-OldXML/*
-NewXML/*
-FinalXML/* 
-
 python/*.pyc
