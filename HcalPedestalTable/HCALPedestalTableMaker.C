@@ -103,17 +103,20 @@ const char* GetDetName(int Subdet)
     if(Subdet==2) DetName = "HE"; 
     if(Subdet==3) DetName = "HO"; 
     if(Subdet==4) DetName = "HF"; 
+    if(Subdet==5) DetName = "HF"; // For QIE10, use HF 
+    if(Subdet==8) DetName = "CRF"; 
     return DetName;
 }
 
 //
-void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor.root", TString SubDet="HB", int option=2) 
+void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString SubDetName="HB", int option=2) 
 { 
 
-    cout << "[HCAL Pedestal table maker] Running option " << option << " for " << SubDet << endl; 
+    cout << "[HCAL Pedestal table maker] Running option " << option << " for " << SubDetName << endl; 
 
     // fit pannel display option
     gStyle->SetOptFit(1011);
+    gStyle->SetOptStat(111111); 
 
     //
     // Get the tree from the PFG ntuple 
@@ -188,6 +191,42 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
     tree->SetBranchAddress("HFDigiNomFC", &HFDigiNomFC_);
     vector<vector<float> >   *HFDigiADC_ = 0; // unlinearlized ADC count
     tree->SetBranchAddress("HFDigiADC", &HFDigiADC_);
+    
+    // QIE10 
+    vector<int>   *QIE10DigiRawID_ = 0;
+    tree->SetBranchAddress("QIE10DigiRawID", &QIE10DigiRawID_);
+    vector<int>   *QIE10DigiSubdet_ = 0;
+    tree->SetBranchAddress("QIE10DigiSubdet", &QIE10DigiSubdet_);
+    vector<int>   *QIE10DigiIEta_ = 0;
+    tree->SetBranchAddress("QIE10DigiIEta", &QIE10DigiIEta_);
+    vector<int>   *QIE10DigiIPhi_ = 0;
+    tree->SetBranchAddress("QIE10DigiIPhi", &QIE10DigiIPhi_);
+    vector<int>   *QIE10DigiDepth_ = 0;
+    tree->SetBranchAddress("QIE10DigiDepth", &QIE10DigiDepth_);
+    vector<vector<int> >   *QIE10DigiCapID_ = 0;
+    tree->SetBranchAddress("QIE10DigiCapID", &QIE10DigiCapID_);
+    vector<vector<float> >   *QIE10DigiADC_ = 0; // unlinearlized ADC count
+    tree->SetBranchAddress("QIE10DigiADC", &QIE10DigiADC_);
+
+    // CRF (QIE11) 
+    vector<int>   *QIE11DigiRawID_ = 0;
+    tree->SetBranchAddress("QIE11DigiRawID", &QIE11DigiRawID_);
+    vector<int>   *QIE11DigiSubdet_ = 0;
+    tree->SetBranchAddress("QIE11DigiSubdet", &QIE11DigiSubdet_);
+    vector<int>   *QIE11DigiIEta_ = 0;
+    tree->SetBranchAddress("QIE11DigiIEta", &QIE11DigiIEta_);
+    vector<int>   *QIE11DigiIPhi_ = 0;
+    tree->SetBranchAddress("QIE11DigiIPhi", &QIE11DigiIPhi_);
+    vector<int>   *QIE11DigiDepth_ = 0;
+    tree->SetBranchAddress("QIE11DigiDepth", &QIE11DigiDepth_);
+    vector<vector<int> >   *QIE11DigiCapID_ = 0;
+    tree->SetBranchAddress("QIE11DigiCapID", &QIE11DigiCapID_);
+    vector<vector<float> >   *QIE11DigiADC_ = 0; // unlinearlized ADC count
+    tree->SetBranchAddress("QIE11DigiADC", &QIE11DigiADC_);
+    vector<vector<float> >   *QIE11DigiFC_ = 0;
+    tree->SetBranchAddress("QIE11DigiFC", &QIE11DigiFC_);
+
+
 
     // 
     // Define histograms for each channel 
@@ -210,9 +249,17 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
                 for(int icap=0; icap<4; icap++)  
                 {
                     h1_ADC[ieta][iphi][idepth][icap] = new 
-                    TH1F( Form("h1_ADC_ieta%s_iphi%i_depth%i_cap%i",(ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),(iphi+1),(idepth+1),icap),
-                          Form("h1_ADC_ieta%s_iphi%i_depth%i_cap%i",(ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),(iphi+1),(idepth+1),icap),
-                          128, -0.5, 127.5);
+                    TH1F( Form("h1_ADC_ieta%s_iphi%i_depth%i_cap%i",
+                                (ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),
+                                SubDetName=="QIE11"?iphi:iphi+1,
+                                (idepth+1),icap),
+                          Form("h1_ADC_ieta%s_iphi%i_depth%i_cap%i",
+                                (ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),
+                                SubDetName=="QIE11"?iphi:iphi+1,
+                                (idepth+1),icap),
+                          //128, -0.5, 127.5);
+                          //16, -0.5, 15.5);
+                          100, -0.5, 200);
                     h1_ADC[ieta][iphi][idepth][icap]->Sumw2();
                 }
             }
@@ -225,7 +272,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
     float ADC_mean[nieta][niphi][ndepth][4];    // mean of ADC count
     float ADC_sigma[nieta][niphi][ndepth][4];   // sigma of ADC count 
     int DetId[nieta][niphi][ndepth];            // Id for channel : it is decimal in the ntuple but to be converted into Heximal  
-    int Subdet[nieta][niphi][ndepth];           // Id for subdetectors : HB=1, HE=2, HO=3, HF=4
+    int Subdet[nieta][niphi][ndepth];           // Id for subdetectors : HB=1, HE=2, HO=3, HF=4, QIE10=5, CRF=8
     for(int ieta=0; ieta<nieta; ieta++) 
     { 
         for(int iphi=0; iphi<niphi; iphi++) 
@@ -258,12 +305,12 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
         if(ievent%100==0) cout << "[HCAL Pedestal table maker] Processed " << ievent << " out of " << nentries << " events" << endl; 
 
         // Fill HBHE
-        if(SubDet=="HB" || SubDet=="HE") 
+        if(SubDetName=="HB" || SubDetName=="HE") 
         { 
             for(unsigned int i=0; i<HBHEDigiRawID_->size(); i++) 
             {
-                if(SubDet=="HB" && HBHEDigiSubdet_->at(i)!=1) continue;
-                if(SubDet=="HE" && HBHEDigiSubdet_->at(i)!=2) continue;
+                if(SubDetName=="HB" && HBHEDigiSubdet_->at(i)!=1) continue;
+                if(SubDetName=="HE" && HBHEDigiSubdet_->at(i)!=2) continue;
                 
                 int ieta =  HBHEDigiIEta_->at(i);
                 int iphi =  HBHEDigiIPhi_->at(i);
@@ -280,7 +327,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
         } 
 
         // Fill HO
-        if(SubDet=="HO") 
+        if(SubDetName=="HO") 
         {
             for(unsigned int i=0; i<HODigiRawID_->size(); i++) 
             {
@@ -299,7 +346,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
         } 
 
         // Fill HF
-        if(SubDet=="HF") 
+        if(SubDetName=="HF") 
         {
             for(unsigned int i=0; i<HFDigiRawID_->size(); i++) 
             {
@@ -312,10 +359,50 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
 
                 for(unsigned int icap=0; icap<8; icap++)  
                 { 
-                    h1_ADC[ieta+41][iphi-1][idepth-1][HFDigiCapID_->at(i).at(icap)]->Fill(HFDigiADC_->at(i).at(icap)); 
+                    h1_ADC[ieta+41][iphi-1][idepth-1][HFDigiCapID_->at(i).at(icap)]->Fill((HFDigiADC_->at(i).at(icap))); 
                 }
             }
         } 
+        
+        // Fill QIE10 
+        if(SubDetName=="QIE10") 
+        {
+            for(unsigned int i=0; i<QIE10DigiRawID_->size(); i++) 
+            {
+                int ieta =  QIE10DigiIEta_->at(i);
+                int iphi =  QIE10DigiIPhi_->at(i);
+                int idepth =  QIE10DigiDepth_->at(i);
+
+                DetId[ieta+41][iphi-1][idepth-1] = QIE10DigiRawID_->at(i);  
+                Subdet[ieta+41][iphi-1][idepth-1] = QIE10DigiSubdet_->at(i);  
+
+                for(unsigned int icap=0; icap<8; icap++)  
+                { 
+                    h1_ADC[ieta+41][iphi-1][idepth-1][QIE10DigiCapID_->at(i).at(icap)]->Fill(QIE10DigiADC_->at(i).at(icap)); 
+                }
+            }
+        } 
+
+        // Fill QIE11 
+        if(SubDetName=="QIE11") 
+        {
+            for(unsigned int i=0; i<QIE11DigiRawID_->size(); i++) 
+            {
+                int ieta =  QIE11DigiIEta_->at(i);
+                int iphi =  QIE11DigiIPhi_->at(i);
+                int idepth =  QIE11DigiDepth_->at(i);
+
+                DetId[ieta+41][iphi-1][idepth-1] = QIE11DigiRawID_->at(i);  
+                Subdet[ieta+41][iphi-1][idepth-1] = QIE11DigiSubdet_->at(i);  
+
+                for(unsigned int icap=0; icap<8; icap++)  
+                { 
+                    //h1_ADC[ieta+41][iphi-1][idepth-1][QIE11DigiCapID_->at(i).at(icap)]->Fill(QIE11DigiADC_->at(i).at(icap)); 
+                    h1_ADC[ieta+41][iphi-1][idepth-1][QIE11DigiCapID_->at(i).at(icap)]->Fill(QIE11DigiFC_->at(i).at(icap)); 
+                }
+            }
+        } 
+
 
     } //for(unsigned int ievent = 0; ievent<nentries; ievent++) 
     
@@ -413,20 +500,59 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
             for(int iphi=0; iphi<niphi; iphi++) 
             {
                 for(int idepth=0; idepth<ndepth; idepth++) 
-                { 
+                {  
+                    bool DRAWCHANNEL=false;
+                    int highADC, lowADC;
+                    if(idepth<3) { highADC=5; lowADC=1; }                    
+                    else { highADC=11; lowADC=7; }                    
+                    if(ADC_mean[ieta][iphi][idepth][0]>highADC || ADC_mean[ieta][iphi][idepth][0]<lowADC) DRAWCHANNEL=true;
+                    if(ADC_mean[ieta][iphi][idepth][1]>highADC || ADC_mean[ieta][iphi][idepth][1]<lowADC) DRAWCHANNEL=true;
+                    if(ADC_mean[ieta][iphi][idepth][2]>highADC || ADC_mean[ieta][iphi][idepth][2]<lowADC) DRAWCHANNEL=true;
+                    if(ADC_mean[ieta][iphi][idepth][3]>highADC || ADC_mean[ieta][iphi][idepth][3]<lowADC) DRAWCHANNEL=true;
+                    if(ADC_sigma[ieta][iphi][idepth][0]>1.5 || ADC_sigma[ieta][iphi][idepth][0]<0.5) DRAWCHANNEL=true;
+                    if(ADC_sigma[ieta][iphi][idepth][1]>1.5 || ADC_sigma[ieta][iphi][idepth][1]<0.5) DRAWCHANNEL=true;
+                    if(ADC_sigma[ieta][iphi][idepth][2]>1.5 || ADC_sigma[ieta][iphi][idepth][2]<0.5) DRAWCHANNEL=true;
+                    if(ADC_sigma[ieta][iphi][idepth][3]>1.5 || ADC_sigma[ieta][iphi][idepth][3]<0.5) DRAWCHANNEL=true;
+                    //if(!DRAWCHANNEL) continue;
+
+                    // ieta,iphi= 35+41,47
+                    // ieta,iphi= 34+41,39
+                    // ieta,iphi= 30+41,39
+                    // ieta,iphi= -18+41,18
+                    //if(!((ieta==76 && iphi==46) || (ieta==75 && iphi==38) || (ieta==71 && iphi==38) || (ieta==23 && iphi==17) 
+                    //      || (ieta==76 && iphi==48) || (ieta==76 && iphi==44))) continue;
+
                     if( h1_ADC[ieta][iphi][idepth][0]->Integral()==0 ) continue;
                     if( Subdet[ieta][iphi][idepth]==-999. ) continue; 
+                   
+                    if(SubDetName=="QIE11") 
+                    {
+                        for(int icap=0; icap<4; icap++)
+                        {
+                            h1_ADC[ieta][iphi][idepth][icap]->SetTitle(
+                                    Form("h1_fC_ieta%s_iphi%i_depth%i_cap%i",
+                                        (ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),
+                                        SubDetName=="QIE11"?iphi:iphi+1,
+                                        8,icap));
+                            h1_ADC[ieta][iphi][idepth][icap]->SetName(
+                                    Form("h1_fC_ieta%s_iphi%i_depth%i_cap%i",
+                                        (ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),
+                                        SubDetName=="QIE11"?iphi:iphi+1,
+                                        8,icap));
+                        }
+                    }
 
                     // Canvas for each channel
                     TCanvas *c = new TCanvas("c", "c", 800, 800); 
                     c->Divide(2,2);  
 
-                    c->cd(1); h1_ADC[ieta][iphi][idepth][0]->Draw(); 
-                    c->cd(2); h1_ADC[ieta][iphi][idepth][1]->Draw(); 
-                    c->cd(3); h1_ADC[ieta][iphi][idepth][2]->Draw(); 
-                    c->cd(4); h1_ADC[ieta][iphi][idepth][3]->Draw(); 
+                    c->cd(1); c->cd(1)->SetLogy(1); h1_ADC[ieta][iphi][idepth][0]->Draw("hist e"); 
+                    c->cd(2); c->cd(2)->SetLogy(1); h1_ADC[ieta][iphi][idepth][1]->Draw("hist e"); 
+                    c->cd(3); c->cd(3)->SetLogy(1); h1_ADC[ieta][iphi][idepth][2]->Draw("hist e"); 
+                    c->cd(4); c->cd(4)->SetLogy(1); h1_ADC[ieta][iphi][idepth][3]->Draw("hist e"); 
 
-                    c->Print(Form("Fig/ADC_ieta%s_iphi%i_depth%i_%s_option%i.C",(ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),(iphi+1),(idepth+1),GetDetName(Subdet[ieta][iphi][idepth]),option)); 
+                    //c->Print(Form("Fig/ADC_ieta%s_iphi%i_depth%i_%s_option%i.C",(ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),(iphi+1),(idepth+1),GetDetName(Subdet[ieta][iphi][idepth]),option)); 
+                    c->Print(Form("Fig/%s_ieta%s_iphi%i_depth%i_%s_option%i.pdf",SubDetName=="QIE11"?"fC":"ADC",(ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),(SubDetName=="QIE11"?iphi:iphi+1),(idepth+1),GetDetName(Subdet[ieta][iphi][idepth]),option)); 
                     delete c;
                 }
             }
@@ -456,9 +582,10 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
     ofstream fout(PedestalTable.Data(), ios_base::app | ios_base::out);
 
     // Printing header
-    if(SubDet=="HB") 
+    if(SubDetName=="HB" || SubDetName=="QIE10" || SubDetName=="QIE11") 
     {   
-        fout << "#U ADC  << this is the unit" << endl;
+        if(SubDetName=="QIE11") fout << "#U fC  << this is the unit" << endl;
+        else fout << "#U ADC  << this is the unit" << endl;
         fout <<
             setw(1) <<  "#"   <<
             setw(16) << "eta" <<
@@ -491,7 +618,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
 
                 fout <<
                     setw(17) << (ieta-41)   <<
-                    setw(16) << (iphi+1)    <<
+                    setw(16) << (SubDetName=="QIE11"?iphi:iphi+1) <<
                     setw(16) << (idepth+1)  <<
                     setw(16) << GetDetName(Subdet[ieta][iphi][idepth])   << 
                     setw(9) << Form("%.5f", ADC_mean[ieta][iphi][idepth][0]) << 
@@ -511,16 +638,19 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../HcalNtuples_239995_Viktor
     fout.close();
     f->Close();
     
-    cout << "[HCAL Pedestal table maker] Done with " << SubDet << endl;
+    cout << "[HCAL Pedestal table maker] Done with " << SubDetName << endl;
     cout << " ........................................................................................  " << endl; 
     
 }
 
 //
-void HCALPedestalTableMaker(TString rootfile="../HcalNtuples_244174_Viktor.root") 
+//void HCALPedestalTableMaker(TString rootfile="../../outputFile_run279721.root") 
+void HCALPedestalTableMaker(TString rootfile="outputFile_USC_282314.root") 
 {
-    HCALPedestalTableMakerSubdet(rootfile, "HB", 2);
-    HCALPedestalTableMakerSubdet(rootfile, "HE", 2);
-    HCALPedestalTableMakerSubdet(rootfile, "HO", 2);
-    HCALPedestalTableMakerSubdet(rootfile, "HF", 2);
+//    HCALPedestalTableMakerSubdet(rootfile, "HB", 2);
+//    HCALPedestalTableMakerSubdet(rootfile, "HE", 2);
+//    HCALPedestalTableMakerSubdet(rootfile, "HO", 2);
+//    HCALPedestalTableMakerSubdet(rootfile, "HF", 2);
+//    HCALPedestalTableMakerSubdet(rootfile, "QIE10", 2);
+    HCALPedestalTableMakerSubdet(rootfile, "QIE11", 1);
 }
