@@ -15,6 +15,11 @@
 #
 #------------------------------------------ 
 #
+# The old pedestal tables are in 
+#    https://twiki.cern.ch/twiki/bin/viewauth/CMS/HcalPedestalsTags2011
+#
+#------------------------------------------ 
+#
 # This script compares only the channels that exist in both files.
 # If a channel exists in one file while not in the other file, 
 # this channel is excluded in comparison.
@@ -170,7 +175,7 @@ def parse(fileName, subs):
         sub = v[3]
 
         #   Throw away channels that are not needed
-        if sub!="HB" and sub!="HE" and sub!="HO" and sub!="HF":
+        if sub!="HB" and sub!="HE" and sub!="HO" and sub!="HF" and sub!="QIE11":
             continue
 
         #   Get Means
@@ -190,6 +195,8 @@ def parse(fileName, subs):
         #   Get the rawId
         rawId = int(v[12], 16)
 
+        print "%d"% depth
+
         #   Add this channel to the proper subsytem
         subs[sub].addCh(ieta, iphi, depth, means, rmss, rawId)
 
@@ -207,13 +214,13 @@ class StatsMaker:
         rr.gDirectory.mkdir("2D")
         self.__hm_diff      = rr.TH1D("hm_diff", "Difference of Means", 100, -1, 1)
         self.__hm0_diff     = rr.TH1D("hm0_diff", "Difference of Means Cap 0", 100, -1, 1)
-        self.__hm1_diff     = rr.TH1D("hm1_diff", "Difference of Means Cap 0", 100, -1, 1)
-        self.__hm2_diff     = rr.TH1D("hm2_diff", "Difference of Means Cap 0", 100, -1, 1)
-        self.__hm3_diff     = rr.TH1D("hm3_diff", "Difference of Means Cap 0", 100, -1, 1)
+        self.__hm1_diff     = rr.TH1D("hm1_diff", "Difference of Means Cap 1", 100, -1, 1)
+        self.__hm2_diff     = rr.TH1D("hm2_diff", "Difference of Means Cap 2", 100, -1, 1)
+        self.__hm3_diff     = rr.TH1D("hm3_diff", "Difference of Means Cap 3", 100, -1, 1)
         self.__hr0_diff     = rr.TH1D("hr0_diff", "Difference of RMSs Cap 0", 100, -1, 1)
-        self.__hr1_diff     = rr.TH1D("hr1_diff", "Difference of RMSs Cap 0", 100, -1, 1)
-        self.__hr2_diff     = rr.TH1D("hr2_diff", "Difference of RMSs Cap 0", 100, -1, 1)
-        self.__hr3_diff     = rr.TH1D("hr3_diff", "Difference of RMSs Cap 0", 100, -1, 1)
+        self.__hr1_diff     = rr.TH1D("hr1_diff", "Difference of RMSs Cap 1", 100, -1, 1)
+        self.__hr2_diff     = rr.TH1D("hr2_diff", "Difference of RMSs Cap 2", 100, -1, 1)
+        self.__hr3_diff     = rr.TH1D("hr3_diff", "Difference of RMSs Cap 3", 100, -1, 1)
         self.__hm0_sub1     = rr.TH1D("hm0_sub1", "Mean Cap 0 for run 269836", 100, 0, 16)
         self.__hm1_sub1     = rr.TH1D("hm1_sub1", "Mean Cap 1 for run 269836", 100, 0, 16)
         self.__hm2_sub1     = rr.TH1D("hm2_sub1", "Mean Cap 2 for run 269836", 100, 0, 16)
@@ -252,6 +259,9 @@ class StatsMaker:
         elif name=="HO":
             depthnum = 1
             depthmin = 4
+        if name=="QIE11":
+            depthnum = 7 
+            depthmin = 1
 
         rr.gDirectory.cd("2D")
         self.__vh2rm0_diff = [rr.TH2D("h2rm0_diff_%d" % (i+depthmin), 
@@ -456,18 +466,21 @@ HF1 = HcalSubsystem("HF", 29, 41, 1, 71, 2, 1, 2, verbosity)
 HF2 = HcalSubsystem("HF", 29, 41, 1, 71, 2, 1, 2, verbosity)
 HB1 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
 HB2 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
+QIE111 = HcalSubsystem("QIE11", 16, 29, 1, 72, 1, 1, 7, verbosity)
+QIE112 = HcalSubsystem("QIE11", 16, 29, 1, 72, 1, 1, 7, verbosity)
 HE1 = HcalSubsystem("HE", 16, 29, 1, 72, 1, 1, 3, verbosity)
 HE2 = HcalSubsystem("HE", 16, 29, 1, 72, 1, 1, 3, verbosity)
 HO1 = HcalSubsystem("HO", 1, 15, 1, 72, 1, 4, 4, verbosity)
 HO2 = HcalSubsystem("HO", 1, 15, 1, 72, 1, 4, 4, verbosity)
 
-subs1 = {"HB" : HB1, "HE" : HE1, "HO" : HO1, "HF" : HF1}
-subs2 = {"HB" : HB2, "HE" : HE2, "HO" : HO2, "HF" : HF2}
+subs1 = {"HB" : HB1, "HE" : HE1, "HO" : HO1, "HF" : HF1, "QIE11" : QIE111}
+subs2 = {"HB" : HB2, "HE" : HE2, "HO" : HO2, "HF" : HF2, "QIE11" : QIE112}
 
 smHB = StatsMaker(rootFile, "HB")
 smHE = StatsMaker(rootFile, "HE")
 smHO = StatsMaker(rootFile, "HO")
 smHF = StatsMaker(rootFile, "HF")
+smQIE11 = StatsMaker(rootFile, "QIE11")
 
 #------------------------------------------ 
 #   Parse both files and produce the comparison
@@ -478,6 +491,7 @@ smHB.makeStats(subs1["HB"], subs2["HB"])
 smHE.makeStats(subs1["HE"], subs2["HE"])
 smHO.makeStats(subs1["HO"], subs2["HO"])
 smHF.makeStats(subs1["HF"], subs2["HF"])
+smQIE11.makeStats(subs1["QIE11"], subs2["QIE11"])
 
 
 #------------------------------------------ 
