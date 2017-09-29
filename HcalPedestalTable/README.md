@@ -8,7 +8,7 @@ You should make a PFGntuple using a local pedestal run first. The following are 
 
 Script that compares two pedestal tables and generate a root file with histrogams of comparison:
 ```
-$ python ped_compare.py [table1] [table2] 
+$ python ped_compare.py [table1.txt] [table2.txt] [output.root]
 ``` 
 
 Script that visualized a pedestal table or the result of comparison (output file of `ped_compare.py`):
