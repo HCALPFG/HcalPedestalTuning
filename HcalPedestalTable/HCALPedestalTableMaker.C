@@ -2,19 +2,21 @@
 //  ROOT macro that produces a pedestal table from a PFG ntuple
 //
 //  Author : Jae Hyeok Yoo (jae.hyeok.yoo@cern.ch)
-//  Written on 01 June 2015 
+//  Written on 06/01/2015 
+//  Last update on 09/28/2017
 // ------------------------------------------------------------------------------------
 //  
 // Pre-requisite :
 //
 //   You should have the PFG ntuple for the Run from which you want to do a measurement. 
-//   Instruction on how to make PFG ntuples can be found here : FIXME link here 
+//   Instruction on how to make PFG ntuples can be found at
+//   https://github.com/HCALPFG/HcalTupleMaker/tree/PFG-CMSSW_9_0_X
 //
 // Caution : 
 //
 //   If the pedestal table file already exists, and you want to generate a new one 
 //   with the same name, remove the existing file or change its name because new 
-//   contents will be "appeneded" to the existing file, i.e., existing file not overwritten. 
+//   contents will be "appeneded" to the existing file, i.e., existing file is not overwritten. 
 //
 // Usage : 
 //
@@ -29,7 +31,7 @@
 //
 //   - option 0           : Gaussian fit  
 //   - option 1           : GetMean() and GetRMS() in TH1
-//   - option 2 (default) : manual calculation 
+//   - option 2 (default) : manual calculation in the range of 0 - max+6  
 //
 
 // 
@@ -78,7 +80,7 @@
 
 using namespace std;
 
-bool DRAWPLOTS  = false;  // draw plots or not (make "Fig" directory first before turning this on)
+bool DRAWPLOTS  = false;   // draw plots or not (make "Fig" directory first before turning this on)
 bool VERBOSE    = false;  // print out mean +/- sigma for each channel or not
 
 //
@@ -104,13 +106,15 @@ const char* GetDetName(int Subdet)
     if(Subdet==3) DetName = "HO"; 
     if(Subdet==4) DetName = "HF"; 
     if(Subdet==5) DetName = "HF"; // For QIE10, use HF 
-    if(Subdet==8) DetName = "CRF"; 
+    if(Subdet==8) DetName = "HE"; // Foe QIE11, use HE 
     return DetName;
 }
 
 //
 void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString SubDetName="HB", int option=2) 
 { 
+    // do not print out too many errors ... 
+    gErrorIgnoreLevel=kError+1;
 
     cout << "[HCAL Pedestal table maker] Running option " << option << " for " << SubDetName << endl; 
 
@@ -208,7 +212,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
     vector<vector<float> >   *QIE10DigiADC_ = 0; // unlinearlized ADC count
     tree->SetBranchAddress("QIE10DigiADC", &QIE10DigiADC_);
 
-    // CRF (QIE11) 
+    // QIE11 (HEP17) 
     vector<int>   *QIE11DigiRawID_ = 0;
     tree->SetBranchAddress("QIE11DigiRawID", &QIE11DigiRawID_);
     vector<int>   *QIE11DigiSubdet_ = 0;
@@ -226,8 +230,6 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
     vector<vector<float> >   *QIE11DigiFC_ = 0;
     tree->SetBranchAddress("QIE11DigiFC", &QIE11DigiFC_);
 
-
-
     // 
     // Define histograms for each channel 
     //  - One channel has 4 capacitors, so there are four plots per channel
@@ -238,7 +240,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
     // number of indices in eta, phi, depth
     int nieta = 83;
     int niphi = 72;
-    int ndepth = 4;
+    int ndepth = 4; if(SubDetName=="QIE11") ndepth = 7; 
     TH1F *h1_ADC[nieta][niphi][ndepth][4]; // the last dimention is capid 
     for(int ieta=0; ieta<nieta; ieta++) 
     { 
@@ -251,15 +253,13 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                     h1_ADC[ieta][iphi][idepth][icap] = new 
                     TH1F( Form("h1_ADC_ieta%s_iphi%i_depth%i_cap%i",
                                 (ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),
-                                SubDetName=="QIE11"?iphi:iphi+1,
+                                iphi+1, //SubDetName=="QIE11"?iphi:iphi+1, 
                                 (idepth+1),icap),
                           Form("h1_ADC_ieta%s_iphi%i_depth%i_cap%i",
                                 (ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),
-                                SubDetName=="QIE11"?iphi:iphi+1,
+                                iphi+1, //SubDetName=="QIE11"?iphi:iphi+1, 
                                 (idepth+1),icap),
-                          //128, -0.5, 127.5);
-                          //16, -0.5, 15.5);
-                          100, -0.5, 200);
+                          128, -0.5, 127.5);
                     h1_ADC[ieta][iphi][idepth][icap]->Sumw2();
                 }
             }
@@ -267,7 +267,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
     }
     
     //
-    // Define and initialize arrays to be used to make text file 
+    // Define and initialize arrays to be used to make a text file 
     //
     float ADC_mean[nieta][niphi][ndepth][4];    // mean of ADC count
     float ADC_sigma[nieta][niphi][ndepth][4];   // sigma of ADC count 
@@ -291,7 +291,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
     }
 
     //
-    // Loop over entries
+    // Loop over events 
     //
     unsigned int nentries = (Int_t)tree->GetEntries();
     cout << "[HCAL Pedestal table maker] The number of entries is: " << nentries << endl;
@@ -319,9 +319,9 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                 DetId[ieta+41][iphi-1][idepth-1] = HBHEDigiRawID_->at(i);  
                 Subdet[ieta+41][iphi-1][idepth-1] = HBHEDigiSubdet_->at(i);  
 
-                for(unsigned int icap=0; icap<8; icap++)  
+                for(unsigned int its=0; its<8; its++)  
                 { 
-                    h1_ADC[ieta+41][iphi-1][idepth-1][HBHEDigiCapID_->at(i).at(icap)]->Fill(HBHEDigiADC_->at(i).at(icap)); 
+                    h1_ADC[ieta+41][iphi-1][idepth-1][HBHEDigiCapID_->at(i).at(its)]->Fill(HBHEDigiADC_->at(i).at(its)); 
                 }
             }
         } 
@@ -338,9 +338,9 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                 DetId[ieta+41][iphi-1][idepth-1] = HODigiRawID_->at(i);  
                 Subdet[ieta+41][iphi-1][idepth-1] = HODigiSubdet_->at(i);  
 
-                for(unsigned int icap=0; icap<8; icap++)  
+                for(unsigned int its=0; its<8; its++)  
                 { 
-                    h1_ADC[ieta+41][iphi-1][idepth-1][HODigiCapID_->at(i).at(icap)]->Fill(HODigiADC_->at(i).at(icap)); 
+                    h1_ADC[ieta+41][iphi-1][idepth-1][HODigiCapID_->at(i).at(its)]->Fill(HODigiADC_->at(i).at(its)); 
                 }
             }
         } 
@@ -357,9 +357,9 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                 DetId[ieta+41][iphi-1][idepth-1] = HFDigiRawID_->at(i);  
                 Subdet[ieta+41][iphi-1][idepth-1] = HFDigiSubdet_->at(i);  
 
-                for(unsigned int icap=0; icap<8; icap++)  
+                for(unsigned int its=0; its<8; its++)  
                 { 
-                    h1_ADC[ieta+41][iphi-1][idepth-1][HFDigiCapID_->at(i).at(icap)]->Fill((HFDigiADC_->at(i).at(icap))); 
+                    h1_ADC[ieta+41][iphi-1][idepth-1][HFDigiCapID_->at(i).at(its)]->Fill((HFDigiADC_->at(i).at(its))); 
                 }
             }
         } 
@@ -376,9 +376,9 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                 DetId[ieta+41][iphi-1][idepth-1] = QIE10DigiRawID_->at(i);  
                 Subdet[ieta+41][iphi-1][idepth-1] = QIE10DigiSubdet_->at(i);  
 
-                for(unsigned int icap=0; icap<8; icap++)  
+                for(unsigned int its=1; its<5; its++)   // due to TS0 corruption
                 { 
-                    h1_ADC[ieta+41][iphi-1][idepth-1][QIE10DigiCapID_->at(i).at(icap)]->Fill(QIE10DigiADC_->at(i).at(icap)); 
+                    h1_ADC[ieta+41][iphi-1][idepth-1][QIE10DigiCapID_->at(i).at(its)]->Fill(QIE10DigiADC_->at(i).at(its)); 
                 }
             }
         } 
@@ -395,10 +395,9 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                 DetId[ieta+41][iphi-1][idepth-1] = QIE11DigiRawID_->at(i);  
                 Subdet[ieta+41][iphi-1][idepth-1] = QIE11DigiSubdet_->at(i);  
 
-                for(unsigned int icap=0; icap<8; icap++)  
+                for(unsigned int its=1; its<9; its++)   // due to TS0 corruption
                 { 
-                    //h1_ADC[ieta+41][iphi-1][idepth-1][QIE11DigiCapID_->at(i).at(icap)]->Fill(QIE11DigiADC_->at(i).at(icap)); 
-                    h1_ADC[ieta+41][iphi-1][idepth-1][QIE11DigiCapID_->at(i).at(icap)]->Fill(QIE11DigiFC_->at(i).at(icap)); 
+                    h1_ADC[ieta+41][iphi-1][idepth-1][QIE11DigiCapID_->at(i).at(its)]->Fill(QIE11DigiADC_->at(i).at(its)); 
                 }
             }
         } 
@@ -451,9 +450,9 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                         ADC_mean[ieta][iphi][idepth][icap] = h1_ADC[ieta][iphi][idepth][icap]->GetMean();   
                         ADC_sigma[ieta][iphi][idepth][icap] = h1_ADC[ieta][iphi][idepth][icap]->GetRMS(); 
                     }
+                    // !! THIS IS THE DRFAULT METHOD !!
                     // No fit : manual calculation of mean and RMS  
                     // Snippet came from DQM code : link 
-                    // THIS IS THE DRFAULT METHOD
                     else if(option==2) 
                     {
                         double Sum=0,nSum=0;
@@ -465,16 +464,17 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                                 max=h1_ADC[ieta][iphi][idepth][icap]->GetBinContent(i); 
                                 maxi=i;
                             }
-                        }
-                        from=1; 
-                        to=maxi+6; 
+                        } 
+                        from=1;  
+                        if(Subdet[ieta][iphi][idepth]==3) to=maxi+3; 
+                        else to=maxi+6; 
                         if(to>128) to=128;
                         for(int i=from;i<=to;i++)
                         {
                             Sum+=(i-1)*h1_ADC[ieta][iphi][idepth][icap]->GetBinContent(i);
                             nSum+=h1_ADC[ieta][iphi][idepth][icap]->GetBinContent(i);
                         }
-                        ADC_mean[ieta][iphi][idepth][icap]=Sum/nSum;
+                        ADC_mean[ieta][iphi][idepth][icap]=Sum/nSum; 
                         Sum=0;
                         for(int i=from;i<=to;i++) Sum+=h1_ADC[ieta][iphi][idepth][icap]->GetBinContent(i)*((i-1)-ADC_mean[ieta][iphi][idepth][icap])*((i-1)-ADC_mean[ieta][iphi][idepth][icap]);
                         ADC_sigma[ieta][iphi][idepth][icap]=TMath::Sqrt(Sum/nSum); 
@@ -486,6 +486,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
    
     // 
     // Drawing : pedestal distribution per channel 
+    // 
     // 
     if(DRAWPLOTS)
     {
@@ -501,6 +502,8 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
             {
                 for(int idepth=0; idepth<ndepth; idepth++) 
                 {  
+                    // Draw plots if the mean is too large or too small 
+                    // You can define other criteria such as large or small RMS  
                     bool DRAWCHANNEL=false;
                     int highADC, lowADC;
                     if(idepth<3) { highADC=5; lowADC=1; }                    
@@ -509,39 +512,13 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                     if(ADC_mean[ieta][iphi][idepth][1]>highADC || ADC_mean[ieta][iphi][idepth][1]<lowADC) DRAWCHANNEL=true;
                     if(ADC_mean[ieta][iphi][idepth][2]>highADC || ADC_mean[ieta][iphi][idepth][2]<lowADC) DRAWCHANNEL=true;
                     if(ADC_mean[ieta][iphi][idepth][3]>highADC || ADC_mean[ieta][iphi][idepth][3]<lowADC) DRAWCHANNEL=true;
-                    if(ADC_sigma[ieta][iphi][idepth][0]>1.5 || ADC_sigma[ieta][iphi][idepth][0]<0.5) DRAWCHANNEL=true;
-                    if(ADC_sigma[ieta][iphi][idepth][1]>1.5 || ADC_sigma[ieta][iphi][idepth][1]<0.5) DRAWCHANNEL=true;
-                    if(ADC_sigma[ieta][iphi][idepth][2]>1.5 || ADC_sigma[ieta][iphi][idepth][2]<0.5) DRAWCHANNEL=true;
-                    if(ADC_sigma[ieta][iphi][idepth][3]>1.5 || ADC_sigma[ieta][iphi][idepth][3]<0.5) DRAWCHANNEL=true;
-                    //if(!DRAWCHANNEL) continue;
 
-                    // ieta,iphi= 35+41,47
-                    // ieta,iphi= 34+41,39
-                    // ieta,iphi= 30+41,39
-                    // ieta,iphi= -18+41,18
-                    //if(!((ieta==76 && iphi==46) || (ieta==75 && iphi==38) || (ieta==71 && iphi==38) || (ieta==23 && iphi==17) 
-                    //      || (ieta==76 && iphi==48) || (ieta==76 && iphi==44))) continue;
+                    if(!DRAWCHANNEL) continue;
 
+                    // Skip if the histogram is empty (= channel does not exis in the ntuple) 
                     if( h1_ADC[ieta][iphi][idepth][0]->Integral()==0 ) continue;
                     if( Subdet[ieta][iphi][idepth]==-999. ) continue; 
-                   
-                    if(SubDetName=="QIE11") 
-                    {
-                        for(int icap=0; icap<4; icap++)
-                        {
-                            h1_ADC[ieta][iphi][idepth][icap]->SetTitle(
-                                    Form("h1_fC_ieta%s_iphi%i_depth%i_cap%i",
-                                        (ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),
-                                        SubDetName=="QIE11"?iphi:iphi+1,
-                                        8,icap));
-                            h1_ADC[ieta][iphi][idepth][icap]->SetName(
-                                    Form("h1_fC_ieta%s_iphi%i_depth%i_cap%i",
-                                        (ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),
-                                        SubDetName=="QIE11"?iphi:iphi+1,
-                                        8,icap));
-                        }
-                    }
-
+                    
                     // Canvas for each channel
                     TCanvas *c = new TCanvas("c", "c", 800, 800); 
                     c->Divide(2,2);  
@@ -551,8 +528,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                     c->cd(3); c->cd(3)->SetLogy(1); h1_ADC[ieta][iphi][idepth][2]->Draw("hist e"); 
                     c->cd(4); c->cd(4)->SetLogy(1); h1_ADC[ieta][iphi][idepth][3]->Draw("hist e"); 
 
-                    //c->Print(Form("Fig/ADC_ieta%s_iphi%i_depth%i_%s_option%i.C",(ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),(iphi+1),(idepth+1),GetDetName(Subdet[ieta][iphi][idepth]),option)); 
-                    c->Print(Form("Fig/%s_ieta%s_iphi%i_depth%i_%s_option%i.pdf",SubDetName=="QIE11"?"fC":"ADC",(ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),(SubDetName=="QIE11"?iphi:iphi+1),(idepth+1),GetDetName(Subdet[ieta][iphi][idepth]),option)); 
+                    c->Print(Form("Fig/ADC_ieta%s_iphi%i_depth%i_%s_option%i.pdf",(ieta>=41?Form("%i",ieta-41):Form("m%i",41-ieta)),(iphi+1),(idepth+1),GetDetName(Subdet[ieta][iphi][idepth]),option)); 
                     delete c;
                 }
             }
@@ -582,10 +558,9 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
     ofstream fout(PedestalTable.Data(), ios_base::app | ios_base::out);
 
     // Printing header
-    if(SubDetName=="HB" || SubDetName=="QIE10" || SubDetName=="QIE11") 
+    if(SubDetName=="HB")
     {   
-        if(SubDetName=="QIE11") fout << "#U fC  << this is the unit" << endl;
-        else fout << "#U ADC  << this is the unit" << endl;
+        fout << "#U ADC  << this is the unit" << endl;
         fout <<
             setw(1) <<  "#"   <<
             setw(16) << "eta" <<
@@ -604,7 +579,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
             << endl; 
     }
 
-    // printing table 
+    // Printing table 
     for(int iphi=0; iphi<niphi; iphi++) 
     { 
         for(int ieta=0; ieta<nieta; ieta++) 
@@ -618,7 +593,7 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
 
                 fout <<
                     setw(17) << (ieta-41)   <<
-                    setw(16) << (SubDetName=="QIE11"?iphi:iphi+1) <<
+                    setw(16) << iphi+1 <<
                     setw(16) << (idepth+1)  <<
                     setw(16) << GetDetName(Subdet[ieta][iphi][idepth])   << 
                     setw(9) << Form("%.5f", ADC_mean[ieta][iphi][idepth][0]) << 
@@ -643,14 +618,60 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
     
 }
 
+
+
+
+void HCALPedestalTableMakerZDC(TString rootfile="../../results.root", int option=2)
+{ 
+    // File name depending on option
+    TString PedestalTable = rootfile;
+    PedestalTable.ReplaceAll(".root",".txt");
+    PedestalTable.ReplaceAll("../","");
+    if(option==0) PedestalTable = "PedestalTable_option0_"+PedestalTable;
+    if(option==1) PedestalTable = "PedestalTable_option1_"+PedestalTable;
+    if(option==2) PedestalTable = "PedestalTable_"+PedestalTable;
+
+    cout << "[HCAL Pedestal table maker] Printing pedestal table file : " << PedestalTable.Data() << endl;
+    cout << "[HCAL Pedestal table maker] Adding ZDC channels ... " << endl;
+
+    // Open file
+    ofstream fout(PedestalTable.Data(), ios_base::app | ios_base::out);
+    // Write ZDC channels 
+    fout << "               -1               1             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000011" << endl;
+    fout << "               -1               2             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000012" << endl;
+    fout << "               -1               3             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000013" << endl;
+    fout << "               -1               4             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000014" << endl;
+    fout << "               -1               5             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000015" << endl;
+    fout << "               -1               1             -99         ZDC_HAD  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000021" << endl;
+    fout << "               -1               2             -99         ZDC_HAD  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000022" << endl;
+    fout << "               -1               3             -99         ZDC_HAD  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000023" << endl;
+    fout << "               -1               4             -99         ZDC_HAD  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000024" << endl;
+    fout << "               -1               1             -99         ZDC_LUM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000031" << endl;
+    fout << "               -1               2             -99         ZDC_LUM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000032" << endl;
+    fout << "                1               1             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000051" << endl;
+    fout << "                1               2             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000052" << endl;
+    fout << "                1               3             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000053" << endl;
+    fout << "                1               4             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000054" << endl;
+    fout << "                1               5             -99          ZDC_EM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000055" << endl;
+    fout << "                1               1             -99         ZDC_HAD  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000061" << endl;
+    fout << "                1               2             -99         ZDC_HAD  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000062" << endl;
+    fout << "                1               3             -99         ZDC_HAD  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000063" << endl;
+    fout << "                1               4             -99         ZDC_HAD  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000064" << endl;
+    fout << "                1               1             -99         ZDC_LUM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000071" << endl;
+    fout << "                1               2             -99         ZDC_LUM  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000  0.00000   54000072" << endl;
+    
+    fout.close();
+}
+
+
+
 //
-//void HCALPedestalTableMaker(TString rootfile="../../outputFile_run279721.root") 
-void HCALPedestalTableMaker(TString rootfile="outputFile_USC_282314.root") 
+void HCALPedestalTableMaker(TString rootfile="../../outputFile_run293777_BV67.root") 
 {
-//    HCALPedestalTableMakerSubdet(rootfile, "HB", 2);
-//    HCALPedestalTableMakerSubdet(rootfile, "HE", 2);
-//    HCALPedestalTableMakerSubdet(rootfile, "HO", 2);
-//    HCALPedestalTableMakerSubdet(rootfile, "HF", 2);
-//    HCALPedestalTableMakerSubdet(rootfile, "QIE10", 2);
-    HCALPedestalTableMakerSubdet(rootfile, "QIE11", 1);
+    HCALPedestalTableMakerSubdet(rootfile, "HB", 2);
+    HCALPedestalTableMakerSubdet(rootfile, "HE", 2);
+    HCALPedestalTableMakerSubdet(rootfile, "HO", 2);
+    HCALPedestalTableMakerSubdet(rootfile, "QIE10", 2); // HF
+    HCALPedestalTableMakerSubdet(rootfile, "QIE11", 2);
+    HCALPedestalTableMakerZDC(rootfile, 2);
 }
