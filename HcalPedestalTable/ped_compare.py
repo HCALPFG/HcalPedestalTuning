@@ -1,27 +1,27 @@
-#------------------------------------------ 
+#------------------------------------------
 #   Hcal PFG script
 #   Description :
 #       Compares Pedestals and Produces Stats
 #   Author : Viktor Khristenko
 #            (victor-khristenko@uiowa.edu)
-#------------------------------------------ 
-# 
-# Usage 
-# $ python ped_compare.py [ped file1] [ped file2] [output root file]  
-# 
-#   file1 : pedestal table file 1 with full path  
-#   file2 : pedestal table file 2 with full path 
-#   output root file : output root file with full path 
+#------------------------------------------
 #
-#------------------------------------------ 
+# Usage
+# $ python ped_compare.py [ped file1] [ped file2] [output root file]
 #
-# The old pedestal tables are in 
+#   file1 : pedestal table file 1 with full path
+#   file2 : pedestal table file 2 with full path
+#   output root file : output root file with full path
+#
+#------------------------------------------
+#
+# The old pedestal tables are in
 #    https://twiki.cern.ch/twiki/bin/viewauth/CMS/HcalPedestalsTags2011
 #
-#------------------------------------------ 
+#------------------------------------------
 #
 # This script compares only the channels that exist in both files.
-# If a channel exists in one file while not in the other file, 
+# If a channel exists in one file while not in the other file,
 # this channel is excluded in comparison.
 #
 # The output root file will contatin (for each subdetector)
@@ -29,7 +29,7 @@
 #   - 1D(as a function of ADC) and 2D(ieta vs iphi) ratio of sigma for each cap (file2/file2)
 #   - summary of ratios
 #
-#------------------------------------------ 
+#------------------------------------------
 
 import sys, copy
 import ROOT as rr
@@ -37,9 +37,9 @@ import ROOT as rr
 if len(sys.argv)<4: sys.exit('You need more argements! \nThis is usage : \n\n    python ped_compare.py [ped file1] [ped file2] [output root file] \n')
 
 
-#------------------------------------------ 
+#------------------------------------------
 #   Define a Channel Class
-#------------------------------------------ 
+#------------------------------------------
 class HcalChannel:
     def __init__(self, ieta, iphi, depth, name):
         self.__ieta         = ieta
@@ -56,7 +56,7 @@ class HcalChannel:
         str1 = '<HcalChannel: ieta=%d iphi=%d depth=%d sub=%s\n' % (
             self.__ieta, self.__iphi, self.__depth, self.__name)
         str2 = 'mean0=%f mean1=%f mean2=%f mean3=%f\n' % (
-            self.__vMeans[0], self.__vMeans[1], self.__vMeans[2], 
+            self.__vMeans[0], self.__vMeans[1], self.__vMeans[2],
             self.__vMeans[3])
         str3 = 'rms0=%f rms1=%f rms2=%f rms3=%f>\n' % (
             self.__vRMSs[0], self.__vRMSs[1], self.__vRMSs[2], self.__vRMSs[3])
@@ -68,9 +68,9 @@ class HcalChannel:
         str2 = ' is enabled already!!!'
         print str1+str2
 
-#------------------------------------------ 
+#------------------------------------------
 #   Define a Subsystem Class
-#------------------------------------------ 
+#------------------------------------------
 class HcalSubsystem:
     def __init__(self, name, ietamin, ietamax,
             iphimin, iphimax, iphistep, depthmin, depthmax, verbosity=0):
@@ -102,7 +102,7 @@ class HcalSubsystem:
 
     def iiphi(self, iphi):
         return (iphi-self.__iphimin)/self.__iphistep
-    
+
     def ieta(self, iieta):
         if iieta<self.__ietanum/2:
             return -(self.__ietamin + self.__ietastep*iieta)
@@ -121,17 +121,17 @@ class HcalSubsystem:
     def idepth(self, depth):
         return (depth-self.__depthmin)/self.__depthstep
 
-    def requestChs(self): 
+    def requestChs(self):
         self.chs = [[[
-            HcalChannel(self.ieta(iieta), self.iphi(iiphi), 
-                self.depth(id), self.__name) 
+            HcalChannel(self.ieta(iieta), self.iphi(iiphi),
+                self.depth(id), self.__name)
             for id in range(self.__depthnum)]
             for iieta in range(self.__ietanum)]
             for iiphi in range(self.__iphinum)]
         self.__numChsRequested = self.__depthnum*self.__iphinum*self.__ietanum
 
     def addCh(self, ieta, iphi, depth, means, rmss, rawId):
-        self.__debug("### Parsing Channel: %d %d %d for SubSystem %s\n" % 
+        self.__debug("### Parsing Channel: %d %d %d for SubSystem %s\n" %
                 (ieta, iphi, depth, self.__name))
 
         iieta = self.iieta(ieta)
@@ -150,9 +150,9 @@ class HcalSubsystem:
         if self.__verbosity>5:
             print s
 
-#------------------------------------------ 
+#------------------------------------------
 #   Define an input function to fill the Subsystems
-#------------------------------------------ 
+#------------------------------------------
 def parse(fileName, subs):
     print "### Reading in %s\n" % fileName
 
@@ -200,14 +200,14 @@ def parse(fileName, subs):
         #   Add this channel to the proper subsytem
         subs[sub].addCh(ieta, iphi, depth, means, rmss, rawId)
 
-#------------------------------------------ 
+#------------------------------------------
 #   Define a StatsMaker Class
-#------------------------------------------ 
+#------------------------------------------
 class StatsMaker:
     def __init__(self, rootFile, name):
         self.__name = name
 
-        print '### Initializing Stats for Subsystem %s\n' % self.__name 
+        print '### Initializing Stats for Subsystem %s\n' % self.__name
         rootFile.cd()
         rootFile.mkdir(self.__name)
         rootFile.cd(self.__name)
@@ -221,14 +221,22 @@ class StatsMaker:
         self.__hr1_diff     = rr.TH1D("hr1_diff", "Difference of RMSs Cap 1", 100, -1, 1)
         self.__hr2_diff     = rr.TH1D("hr2_diff", "Difference of RMSs Cap 2", 100, -1, 1)
         self.__hr3_diff     = rr.TH1D("hr3_diff", "Difference of RMSs Cap 3", 100, -1, 1)
-        self.__hm0_sub1     = rr.TH1D("hm0_sub1", "Mean Cap 0 for run 269836", 100, 0, 16)
-        self.__hm1_sub1     = rr.TH1D("hm1_sub1", "Mean Cap 1 for run 269836", 100, 0, 16)
-        self.__hm2_sub1     = rr.TH1D("hm2_sub1", "Mean Cap 2 for run 269836", 100, 0, 16)
-        self.__hm3_sub1     = rr.TH1D("hm3_sub1", "Mean Cap 3 for run 269836", 100, 0, 16)
-        self.__hr0_sub1     = rr.TH1D("hr0_sub1", "RMS Cap 0 for run 269836", 100, 0, 2)
-        self.__hr1_sub1     = rr.TH1D("hr1_sub1", "RMS Cap 1 for run 269836", 100, 0, 2)
-        self.__hr2_sub1     = rr.TH1D("hr2_sub1", "RMS Cap 2 for run 269836", 100, 0, 2)
-        self.__hr3_sub1     = rr.TH1D("hr3_sub1", "RMS Cap 3 for run 269836", 100, 0, 2)
+        self.__hm0_sub1     = rr.TH1D("hm0_sub1", "Mean Cap 0 for run1", 100, 0, 16)
+        self.__hm1_sub1     = rr.TH1D("hm1_sub1", "Mean Cap 1 for run1", 100, 0, 16)
+        self.__hm2_sub1     = rr.TH1D("hm2_sub1", "Mean Cap 2 for run1", 100, 0, 16)
+        self.__hm3_sub1     = rr.TH1D("hm3_sub1", "Mean Cap 3 for run1", 100, 0, 16)
+        self.__hr0_sub1     = rr.TH1D("hr0_sub1", "RMS Cap 0 for run1", 100, 0, 2)
+        self.__hr1_sub1     = rr.TH1D("hr1_sub1", "RMS Cap 1 for run1", 100, 0, 2)
+        self.__hr2_sub1     = rr.TH1D("hr2_sub1", "RMS Cap 2 for run1", 100, 0, 2)
+        self.__hr3_sub1     = rr.TH1D("hr3_sub1", "RMS Cap 3 for run1", 100, 0, 2)
+        self.__hm0_sub2     = rr.TH1D("hm0_sub2", "Mean Cap 0 for run2", 100, 0, 16)
+        self.__hm1_sub2     = rr.TH1D("hm1_sub2", "Mean Cap 1 for run2", 100, 0, 16)
+        self.__hm2_sub2     = rr.TH1D("hm2_sub2", "Mean Cap 2 for run2", 100, 0, 16)
+        self.__hm3_sub2     = rr.TH1D("hm3_sub2", "Mean Cap 3 for run2", 100, 0, 16)
+        self.__hr0_sub2     = rr.TH1D("hr0_sub2", "RMS Cap 0 for run2", 100, 0, 2)
+        self.__hr1_sub2     = rr.TH1D("hr1_sub2", "RMS Cap 1 for run2", 100, 0, 2)
+        self.__hr2_sub2     = rr.TH1D("hr2_sub2", "RMS Cap 2 for run2", 100, 0, 2)
+        self.__hr3_sub2     = rr.TH1D("hr3_sub2", "RMS Cap 3 for run2", 100, 0, 2)
         self.__hm0      = rr.TH1D("hm0", "Ratio of Means Cap 0", 100, 0, 2)
         self.__hm1      = rr.TH1D("hm1", "Ratio of Means Cap 1", 100, 0, 2)
         self.__hm2      = rr.TH1D("hm2", "Ratio of Means Cap 2", 100, 0, 2)
@@ -237,10 +245,10 @@ class StatsMaker:
         self.__hr1      = rr.TH1D("hr1", "Ratio RMSs Cap 1", 100, 0, 2)
         self.__hr2      = rr.TH1D("hr2", "Ratio RMSs Cap 2", 100, 0, 2)
         self.__hr3      = rr.TH1D("hr3", "Ratio RMSs Cap 2", 100, 0, 2)
-        self.__hrawId   = rr.TH1D("hrawId", 
+        self.__hrawId   = rr.TH1D("hrawId",
                 "Ratio of RawIds(Base16) converted to base 10", 100, 0, 2)
-        self.__hSummary = rr.TH2D("hSummary", 
-                "Summary over all Caps(0-3) for RMS/Mean/rawId", 
+        self.__hSummary = rr.TH2D("hSummary",
+                "Summary over all Caps(0-3) for RMS/Mean/rawId",
                 9, 0, 9, 2, 0, 2);
         for i in range(4):
             self.__hSummary.GetXaxis().SetBinLabel(i+1, "Means Cap%d" % i)
@@ -251,65 +259,65 @@ class StatsMaker:
 
         #   Put it by hand
         if name=="HF":
-            depthnum = 2
+            depthnum = 4
             depthmin = 1
-        elif name=="HB" or name=="HE":
+        elif name=="HB":
             depthnum = 3
             depthmin = 1
         elif name=="HO":
             depthnum = 1
             depthmin = 4
-        if name=="QIE11":
-            depthnum = 7 
+        if name=="QIE11" or name=="HE":
+            depthnum = 7
             depthmin = 1
 
         rr.gDirectory.cd("2D")
-        self.__vh2rm0_diff = [rr.TH2D("h2rm0_diff_%d" % (i+depthmin), 
+        self.__vh2rm0_diff = [rr.TH2D("h2rm0_diff_%d" % (i+depthmin),
             "Difference of Means Cap 0 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rm1_diff = [rr.TH2D("h2rm1_diff_%d" % (i+depthmin), 
+        self.__vh2rm1_diff = [rr.TH2D("h2rm1_diff_%d" % (i+depthmin),
             "Difference of Means Cap 1 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rm2_diff = [rr.TH2D("h2rm2_diff_%d" % (i+depthmin), 
+        self.__vh2rm2_diff = [rr.TH2D("h2rm2_diff_%d" % (i+depthmin),
             "Difference of Means Cap 2 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rm3_diff = [rr.TH2D("h2rm3_diff_%d" % (i+depthmin), 
+        self.__vh2rm3_diff = [rr.TH2D("h2rm3_diff_%d" % (i+depthmin),
             "Difference of Means Cap 3 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rr0_diff = [rr.TH2D("h2rr0_diff_%d" % (i+depthmin), 
+        self.__vh2rr0_diff = [rr.TH2D("h2rr0_diff_%d" % (i+depthmin),
             "Difference of RMSs Cap 0 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rr1_diff = [rr.TH2D("h2rr1_diff_%d" % (i+depthmin), 
+        self.__vh2rr1_diff = [rr.TH2D("h2rr1_diff_%d" % (i+depthmin),
             "Difference of RMSs Cap 1 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rr2_diff = [rr.TH2D("h2rr2_diff_%d" % (i+depthmin), 
+        self.__vh2rr2_diff = [rr.TH2D("h2rr2_diff_%d" % (i+depthmin),
             "Difference of RMSs Cap 2 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rr3_diff = [rr.TH2D("h2rr3_diff_%d" % (i+depthmin), 
+        self.__vh2rr3_diff = [rr.TH2D("h2rr3_diff_%d" % (i+depthmin),
             "Difference of RMSs Cap 3 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rm0 = [rr.TH2D("h2rm0_%d" % (i+depthmin), 
+        self.__vh2rm0 = [rr.TH2D("h2rm0_%d" % (i+depthmin),
             "Ratio of Means Cap 0 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rm1 = [rr.TH2D("h2rm1_%d" % (i+depthmin), 
+        self.__vh2rm1 = [rr.TH2D("h2rm1_%d" % (i+depthmin),
             "Ratio of Means Cap 1 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rm2 = [rr.TH2D("h2rm2_%d" % (i+depthmin), 
+        self.__vh2rm2 = [rr.TH2D("h2rm2_%d" % (i+depthmin),
             "Ratio of Means Cap 2 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rm3 = [rr.TH2D("h2rm3_%d" % (i+depthmin), 
+        self.__vh2rm3 = [rr.TH2D("h2rm3_%d" % (i+depthmin),
             "Ratio of Means Cap 3 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rr0 = [rr.TH2D("h2rr0_%d" % (i+depthmin), 
+        self.__vh2rr0 = [rr.TH2D("h2rr0_%d" % (i+depthmin),
             "Ratio of RMSs Cap 0 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rr1 = [rr.TH2D("h2rr1_%d" % (i+depthmin), 
+        self.__vh2rr1 = [rr.TH2D("h2rr1_%d" % (i+depthmin),
             "Ratio of RMSs Cap 1 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rr2 = [rr.TH2D("h2rr2_%d" % (i+depthmin), 
+        self.__vh2rr2 = [rr.TH2D("h2rr2_%d" % (i+depthmin),
             "Ratio of RMSs Cap 2 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
-        self.__vh2rr3 = [rr.TH2D("h2rr3_%d" % (i+depthmin), 
+        self.__vh2rr3 = [rr.TH2D("h2rr3_%d" % (i+depthmin),
             "Ratio of RMSs Cap 3 D%d" % (i+depthmin),
             83, -41.5, 41.5, 72, 0.5, 72.5) for i in range(depthnum)]
 
@@ -327,34 +335,34 @@ class StatsMaker:
                             not sub2.chs[iiphi][iieta][id].enabled):
                         continue
 
-                    if abs(sub1.chs[iiphi][iieta][id].means[0]-sub2.chs[iiphi][iieta][id].means[0]) > 1.: 
-                        print "ieta=%d iphi=%d depth=%d capid=0" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)   
-                    if abs(sub1.chs[iiphi][iieta][id].means[1]-sub2.chs[iiphi][iieta][id].means[1]) > 1.: 
-                        print "ieta=%d iphi=%d depth=%d capid=1" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)   
-                    if abs(sub1.chs[iiphi][iieta][id].means[2]-sub2.chs[iiphi][iieta][id].means[2]) > 1.: 
-                        print "ieta=%d iphi=%d depth=%d capid=2" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)   
-                    if abs(sub1.chs[iiphi][iieta][id].means[3]-sub2.chs[iiphi][iieta][id].means[3]) > 1.: 
-                        print "ieta=%d iphi=%d depth=%d capid=3" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)   
-                    
-                    rm0 = (sub1.chs[iiphi][iieta][id].means[0] / 
+                    if abs(sub1.chs[iiphi][iieta][id].means[0]-sub2.chs[iiphi][iieta][id].means[0]) > 1.:
+                        print "ieta=%d iphi=%d depth=%d capid=0" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)
+                    if abs(sub1.chs[iiphi][iieta][id].means[1]-sub2.chs[iiphi][iieta][id].means[1]) > 1.:
+                        print "ieta=%d iphi=%d depth=%d capid=1" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)
+                    if abs(sub1.chs[iiphi][iieta][id].means[2]-sub2.chs[iiphi][iieta][id].means[2]) > 1.:
+                        print "ieta=%d iphi=%d depth=%d capid=2" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)
+                    if abs(sub1.chs[iiphi][iieta][id].means[3]-sub2.chs[iiphi][iieta][id].means[3]) > 1.:
+                        print "ieta=%d iphi=%d depth=%d capid=3" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)
+
+                    rm0 = (sub1.chs[iiphi][iieta][id].means[0] /
                             sub2.chs[iiphi][iieta][id].means[0])
-                    rm1 = (sub1.chs[iiphi][iieta][id].means[1] / 
+                    rm1 = (sub1.chs[iiphi][iieta][id].means[1] /
                             sub2.chs[iiphi][iieta][id].means[1])
-                    rm2 = (sub1.chs[iiphi][iieta][id].means[2] / 
+                    rm2 = (sub1.chs[iiphi][iieta][id].means[2] /
                             sub2.chs[iiphi][iieta][id].means[2])
-                    rm3 = (sub1.chs[iiphi][iieta][id].means[3] / 
+                    rm3 = (sub1.chs[iiphi][iieta][id].means[3] /
                             sub2.chs[iiphi][iieta][id].means[3])
-                    rr0 = (sub1.chs[iiphi][iieta][id].rmss[0] / 
+                    rr0 = (sub1.chs[iiphi][iieta][id].rmss[0] /
                             sub2.chs[iiphi][iieta][id].rmss[0])
-                    rr1 = (sub1.chs[iiphi][iieta][id].rmss[1] / 
+                    rr1 = (sub1.chs[iiphi][iieta][id].rmss[1] /
                             sub2.chs[iiphi][iieta][id].rmss[1])
-                    rr2 = (sub1.chs[iiphi][iieta][id].rmss[2] / 
+                    rr2 = (sub1.chs[iiphi][iieta][id].rmss[2] /
                             sub2.chs[iiphi][iieta][id].rmss[2])
-                    rr3 = (sub1.chs[iiphi][iieta][id].rmss[3] / 
+                    rr3 = (sub1.chs[iiphi][iieta][id].rmss[3] /
                             sub2.chs[iiphi][iieta][id].rmss[3])
                     rraw = (sub1.chs[iiphi][iieta][id].rawId /
                             sub2.chs[iiphi][iieta][id].rawId)
-                    self.__hm_diff.Fill(sub1.chs[iiphi][iieta][id].means[0] 
+                    self.__hm_diff.Fill(sub1.chs[iiphi][iieta][id].means[0]
                                         +sub1.chs[iiphi][iieta][id].means[1]
                                         +sub1.chs[iiphi][iieta][id].means[2]
                                         +sub1.chs[iiphi][iieta][id].means[3]
@@ -378,6 +386,14 @@ class StatsMaker:
                     self.__hr1_sub1.Fill(sub1.chs[iiphi][iieta][id].rmss[1])
                     self.__hr2_sub1.Fill(sub1.chs[iiphi][iieta][id].rmss[2])
                     self.__hr3_sub1.Fill(sub1.chs[iiphi][iieta][id].rmss[3])
+                    self.__hm0_sub2.Fill(sub2.chs[iiphi][iieta][id].means[0])
+                    self.__hm1_sub2.Fill(sub2.chs[iiphi][iieta][id].means[1])
+                    self.__hm2_sub2.Fill(sub2.chs[iiphi][iieta][id].means[2])
+                    self.__hm3_sub2.Fill(sub2.chs[iiphi][iieta][id].means[3])
+                    self.__hr0_sub2.Fill(sub2.chs[iiphi][iieta][id].rmss[0])
+                    self.__hr1_sub2.Fill(sub2.chs[iiphi][iieta][id].rmss[1])
+                    self.__hr2_sub2.Fill(sub2.chs[iiphi][iieta][id].rmss[2])
+                    self.__hr3_sub2.Fill(sub2.chs[iiphi][iieta][id].rmss[3])
                     self.__hm0.Fill(rm0)
                     self.__hm1.Fill(rm1)
                     self.__hm2.Fill(rm2)
@@ -387,7 +403,7 @@ class StatsMaker:
                     self.__hr2.Fill(rr2)
                     self.__hr3.Fill(rr3)
                     self.__hrawId.Fill(rraw)
-                    
+
                     iphi = sub1.iphi(iiphi)
                     ieta = sub1.ieta(iieta)
                     self.__vh2rm0_diff[id].Fill(ieta, iphi, sub1.chs[iiphi][iieta][id].means[0]-sub2.chs[iiphi][iieta][id].means[0])
@@ -416,7 +432,7 @@ class StatsMaker:
         rms_m2          = self.__hm2.GetRMS()
         mean_m3         = self.__hm3.GetMean()
         rms_m3          = self.__hm3.GetRMS()
-        
+
         mean_r0         = self.__hr0.GetMean()
         rms_r0          = self.__hr0.GetRMS()
         mean_r1         = self.__hr1.GetMean()
@@ -425,7 +441,7 @@ class StatsMaker:
         rms_r2          = self.__hr2.GetRMS()
         mean_r3         = self.__hr3.GetMean()
         rms_r3          = self.__hr3.GetRMS()
-        
+
         mean_raw        = self.__hrawId.GetMean()
         rms_raw         = self.__hrawId.GetRMS()
 
@@ -450,53 +466,55 @@ class StatsMaker:
 
 #       self.__hSummary.GetZaxis().SetRangeUser(0.8, 1.2)
 
-#------------------------------------------ 
+#------------------------------------------
 #   Init Input
-#------------------------------------------ 
+#------------------------------------------
 fileName1 = sys.argv[1]
 fileName2 = sys.argv[2]
 rootFileName = sys.argv[3]
 rootFile = rr.TFile(rootFileName, "recreate")
 verbosity = 0
 
-#------------------------------------------ 
+#------------------------------------------
 #   Initialize the Subsystems and StatsMakers
-#------------------------------------------ 
-HF1 = HcalSubsystem("HF", 29, 41, 1, 71, 2, 1, 2, verbosity)
-HF2 = HcalSubsystem("HF", 29, 41, 1, 71, 2, 1, 2, verbosity)
-HB1 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
-HB2 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
-QIE111 = HcalSubsystem("QIE11", 16, 29, 1, 72, 1, 1, 7, verbosity)
-QIE112 = HcalSubsystem("QIE11", 16, 29, 1, 72, 1, 1, 7, verbosity)
-HE1 = HcalSubsystem("HE", 16, 29, 1, 72, 1, 1, 3, verbosity)
-HE2 = HcalSubsystem("HE", 16, 29, 1, 72, 1, 1, 3, verbosity)
-HO1 = HcalSubsystem("HO", 1, 15, 1, 72, 1, 4, 4, verbosity)
-HO2 = HcalSubsystem("HO", 1, 15, 1, 72, 1, 4, 4, verbosity)
+#------------------------------------------
+#HF1 = HcalSubsystem("HF", 29, 41, 1, 71, 2, 1, 4, verbosity)
+#HF2 = HcalSubsystem("HF", 29, 41, 1, 71, 2, 1, 4, verbosity)
+#HB1 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
+#HB2 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
+#QIE111 = HcalSubsystem("QIE11", 16, 29, 1, 72, 1, 1, 7, verbosity)
+#QIE112 = HcalSubsystem("QIE11", 16, 29, 1, 72, 1, 1, 7, verbosity)
+HE1 = HcalSubsystem("HE", 16, 29, 1, 72, 1, 1, 7, verbosity)
+HE2 = HcalSubsystem("HE", 16, 29, 1, 72, 1, 1, 7, verbosity)
+#HO1 = HcalSubsystem("HO", 1, 15, 1, 72, 1, 4, 4, verbosity)
+#HO2 = HcalSubsystem("HO", 1, 15, 1, 72, 1, 4, 4, verbosity)
 
-subs1 = {"HB" : HB1, "HE" : HE1, "HO" : HO1, "HF" : HF1, "QIE11" : QIE111}
-subs2 = {"HB" : HB2, "HE" : HE2, "HO" : HO2, "HF" : HF2, "QIE11" : QIE112}
+#subs1 = {"HB" : HB1, "HE" : HE1, "HO" : HO1, "HF" : HF1, "QIE11" : QIE111}
+#subs2 = {"HB" : HB2, "HE" : HE2, "HO" : HO2, "HF" : HF2, "QIE11" : QIE112}
+subs1 = {"HE" : HE1}
+subs2 = {"HE" : HE2}
 
-smHB = StatsMaker(rootFile, "HB")
+#smHB = StatsMaker(rootFile, "HB")
 smHE = StatsMaker(rootFile, "HE")
-smHO = StatsMaker(rootFile, "HO")
-smHF = StatsMaker(rootFile, "HF")
-smQIE11 = StatsMaker(rootFile, "QIE11")
+#smHO = StatsMaker(rootFile, "HO")
+#smHF = StatsMaker(rootFile, "HF")
+#smQIE11 = StatsMaker(rootFile, "QIE11")
 
-#------------------------------------------ 
+#------------------------------------------
 #   Parse both files and produce the comparison
-#------------------------------------------ 
+#------------------------------------------
 parse(fileName1, subs1)
 parse(fileName2, subs2)
-smHB.makeStats(subs1["HB"], subs2["HB"])
+#smHB.makeStats(subs1["HB"], subs2["HB"])
 smHE.makeStats(subs1["HE"], subs2["HE"])
-smHO.makeStats(subs1["HO"], subs2["HO"])
-smHF.makeStats(subs1["HF"], subs2["HF"])
-smQIE11.makeStats(subs1["QIE11"], subs2["QIE11"])
+#smHO.makeStats(subs1["HO"], subs2["HO"])
+#smHF.makeStats(subs1["HF"], subs2["HF"])
+#smQIE11.makeStats(subs1["QIE11"], subs2["QIE11"])
 
 
-#------------------------------------------ 
+#------------------------------------------
 #   Finalize
-#------------------------------------------ 
+#------------------------------------------
 rootFile.Write()
 rootFile.Close()
 print '### DONE!'
