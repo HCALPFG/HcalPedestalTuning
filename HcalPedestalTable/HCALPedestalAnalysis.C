@@ -23,6 +23,8 @@
 #include "TString.h"
 #include "TColor.h"
 #include "TLatex.h"
+#include "TStyle.h"
+#include "TROOT.h"
 
 //
 // h2 cosmetics
@@ -38,9 +40,9 @@ void h2cosmetic(TH2D* &h2, char* title, TString Xvar="", TString Yvar="", TStrin
     h2->SetStats(0);
 }
 
-
 void HCALPedestalTableAnalysis(TString PedTable="PedestalTable_results.txt") 
 { 
+    gStyle->SetOptStat(111111); 
 
     // [HB HE HO HF QIE11][cap 0 1 2 3] 
     TH1D        *h1_mean[5][4];
@@ -50,7 +52,6 @@ void HCALPedestalTableAnalysis(TString PedTable="PedestalTable_results.txt")
         TString subdet="HB"; if(isub==1) subdet="HE"; if(isub==2) subdet="HO"; if(isub==3) subdet="HF"; if(isub==4) subdet="QIE11";
         for(int cap=0; cap<4; cap++)
         {
-            //if(isub==3) { Max=11; Min=7; }
             h1_mean[isub][cap]  = new TH1D(Form("h1_mean_%s_cap%i",subdet.Data(),cap),   Form("h1_mean_%s_cap%i",subdet.Data(),cap),      50,0,16);
             h1_width[isub][cap]  = new TH1D(Form("h1_width_%s_cap%i",subdet.Data(),cap),   Form("h1_width_%s_cap%i",subdet.Data(),cap),   50,0,2);
         }
@@ -87,9 +88,18 @@ void HCALPedestalTableAnalysis(TString PedTable="PedestalTable_results.txt")
             // Store each element in the line to the defined variables
             stringstream stream(line);
             stream >> ieta >> iphi >> depth >> det >> cap0 >> cap1 >> cap2 >> cap3 >> widthcap0 >> widthcap1 >> widthcap2 >> widthcap3;  
-            
+        
             if( !fin.good() ) continue;
-            
+           
+            // skip ZDC channels 
+            if(det=="ZDC_EM") continue; 
+            if(det=="ZDC_HAD") continue; 
+            if(det=="ZDC_LUM") continue; 
+           
+            // Exclude non-physics channels
+            if((ieta==18 || ieta==-18) && depth==1) continue; 
+
+            // Fill histograms
             if(det=="HB") { h1_mean[0][0]->Fill(cap0); h1_mean[0][1]->Fill(cap1); h1_mean[0][2]->Fill(cap2); h1_mean[0][3]->Fill(cap3);}
             if(det=="HE") { h1_mean[1][0]->Fill(cap0); h1_mean[1][1]->Fill(cap1); h1_mean[1][2]->Fill(cap2); h1_mean[1][3]->Fill(cap3);}
             if(det=="HO") { h1_mean[2][0]->Fill(cap0); h1_mean[2][1]->Fill(cap1); h1_mean[2][2]->Fill(cap2); h1_mean[2][3]->Fill(cap3);}
@@ -113,10 +123,12 @@ void HCALPedestalTableAnalysis(TString PedTable="PedestalTable_results.txt")
 
         }
     }
-   
-
+  
+    // 
+    // Draw plots
+    // 
     TCanvas *c_mean_2d[7], *c_width_2d[7], *c_mean_1d[5], *c_width_1d[5];
-    // 2d 
+    // 2d plots 
     for(int depth=0; depth<7; depth++)
     { 
         c_mean_2d[depth] = new TCanvas(Form("c_mean_2d_depth%i", depth+1), Form("c_mean_2d_depth%i", depth+1), 800,600);
@@ -133,9 +145,27 @@ void HCALPedestalTableAnalysis(TString PedTable="PedestalTable_results.txt")
         c_width_2d[depth]->cd(2); h2_width[depth][1]->Draw("colz");
         c_width_2d[depth]->cd(3); h2_width[depth][2]->Draw("colz");
         c_width_2d[depth]->cd(4); h2_width[depth][3]->Draw("colz");
-        c_width_2d[depth]->Print(Form("Fig/c_width_2d_depth%i.pdf", depth+1));
+        c_width_2d[depth]->Print(Form("Fig/c_width_2d_depth%i.pdf", depth+1)); 
+
     } 
-    // 1d 
+    
+    TFile *HistFile = new TFile("ped.root", "RECREATE");
+    gROOT->cd();
+    HistFile->cd();
+    for(int depth=0; depth<7; depth++)
+    {
+        h2_mean[depth][0]->SetDirectory(0); h2_mean[depth][0]->Write();
+        h2_mean[depth][1]->SetDirectory(0); h2_mean[depth][1]->Write();
+        h2_mean[depth][2]->SetDirectory(0); h2_mean[depth][2]->Write();
+        h2_mean[depth][3]->SetDirectory(0); h2_mean[depth][3]->Write();
+        h2_width[depth][0]->SetDirectory(0); h2_width[depth][0]->Write();
+        h2_width[depth][1]->SetDirectory(0); h2_width[depth][1]->Write();
+        h2_width[depth][2]->SetDirectory(0); h2_width[depth][2]->Write();
+        h2_width[depth][3]->SetDirectory(0); h2_width[depth][3]->Write();
+    }
+    HistFile->Close();
+ 
+    // 1d plots 
     for(int isub=0; isub<5; isub++)
     {
         TString subdet="HB"; if(isub==1) subdet="HE"; if(isub==2) subdet="HO"; if(isub==3) subdet="HF";if(isub==4) subdet="QIE11"; 
@@ -161,6 +191,8 @@ void HCALPedestalTableAnalysis(TString PedTable="PedestalTable_results.txt")
 
 void HCALPedestalCompareAnalysis(TString CompareFile="compare.root") 
 { 
+    gStyle->SetOptStat(111111); 
+    
     //
     TFile* comparefile = TFile::Open(CompareFile);
 
@@ -175,7 +207,8 @@ void HCALPedestalCompareAnalysis(TString CompareFile="compare.root")
     for(int var=0; var<2; var++)
     { 
         for(int subdet=0; subdet<5; subdet++) 
-        {   
+        {    
+            if(subdet!=2) continue; // FIXME
             // 
             TString Var="hm"; if(var==1) Var="hr"; 
             TString SubDet="HB"; if(subdet==1) SubDet="HE"; 
@@ -264,12 +297,13 @@ void HCALPedestalCompareAnalysis(TString CompareFile="compare.root")
     Double_t Blue[Number]   = { 0.00, 0.00, 1.00, 1.00, 1.00};
     Double_t Length[Number] = { 0.00, 0.25, 0.50, 0.75, 1.00 };
     Int_t nb=50;
-    TColor::CreateGradientColorTable(Number,Length,Blue,Green,Red,nb);
+//    TColor::CreateGradientColorTable(Number,Length,Blue,Green,Red,nb);
 
     for(int var=0; var<2; var++)
     { 
         for(int subdet=0; subdet<5; subdet++) 
         {   
+            if(subdet!=2) continue; // FIXME
             for(int depth=0; depth<4; depth++) 
             { 
                 // 
@@ -295,13 +329,16 @@ void HCALPedestalCompareAnalysis(TString CompareFile="compare.root")
                     cout << Form("Analyzing %s %s capid=%i depth=%i", SubDet.Data(), Var.Data(), capid, depth+1) << endl; 
 
                     // 
-                    h2[var][subdet][depth][capid] = (TH2D*)comparefile->Get(Form("%s/2D/h2%s%i_diff_%i", SubDet.Data(), Var.Data(), capid, depth+1));
+                    //h2[var][subdet][depth][capid] = (TH2D*)comparefile->Get(Form("%s/2D/h2%s%i_diff_%i", SubDet.Data(), Var.Data(), capid, depth+1));
+                    h2[var][subdet][depth][capid] = (TH2D*)comparefile->Get(Form("%s/2D/h2%s%i_%i", SubDet.Data(), Var.Data(), capid, depth+1));
                     
                     // 
                     c->cd(capid+1);
                     h2[var][subdet][depth][capid]->SetContour(nb);
-                    h2[var][subdet][depth][capid]->SetMaximum(1);
-                    h2[var][subdet][depth][capid]->SetMinimum(-1);
+                    h2[var][subdet][depth][capid]->SetMaximum(1.5);
+                    h2[var][subdet][depth][capid]->SetMinimum(0);
+                    //h2[var][subdet][depth][capid]->SetMaximum(1);
+                    //h2[var][subdet][depth][capid]->SetMinimum(-1);
                     h2[var][subdet][depth][capid]->SetStats(0);
                     h2[var][subdet][depth][capid]->SetTitle(Form("Difference of %s: %s depth=%i capid=%i", SubDet.Data(), Var.Data(), depth+1, capid));
                     h2[var][subdet][depth][capid]->Draw("colz");
@@ -319,16 +356,18 @@ void HCALPedestalCompareAnalysis(TString CompareFile="compare.root")
 
 void HCALPedestalAnalysis() 
 { 
+
     //
     // Analysis: visualization of a ped table
-    //
-    HCALPedestalTableAnalysis("PedestalTable_outputFile_run293777_run293775HEP17.txt"); 
+    // 
+    // - make sure that you have made "Fig" directory where the generated plots will be saved
+    HCALPedestalTableAnalysis("PedestalTable_HcalTupleMaker_ped_321028.txt");
     
     //
     // Analysis: compare two tables 
     //
     // Need to run ped_compare.py first to get the input file that contains histroms
     // This function visualizes them  
-    //HCALPedestalCompareAnalysis("output_NewvsDB.root"); 
+    //HCALPedestalCompareAnalysis("compare_v4_v3.root"); 
 
 }
