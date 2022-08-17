@@ -16,7 +16,7 @@ Script that visualized a pedestal table or the result of comparison (output file
 $ root -b -q HCALPedestalAnalysis.C++  
 ```
 
-After generating a pedestal table, check if there are missing channels. <br/> You can check it by scanning 2D plots, the output file of `HCALPedestalAnalysis.C++`. If there are too many missing channels to interpolate by hand, you can make a list of missing channels and run this code.
+After generating a pedestal table, check if there are missing channels. <br/> You can check it through 2D plots, output files of `HCALPedestalAnalysis.C++`. If there are too many missing channels to interpolate by hand, you can make a list of missing channels and run this code.
 ```
 $ python interpolation.py [table.txt] [missing_channels.txt] [output.txt]
 ```
