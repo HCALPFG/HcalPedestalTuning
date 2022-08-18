@@ -1,23 +1,28 @@
 # HcalPedestalTuning/HcalPedestalTable 
 
-`HCALPedestalTableMaker.C` is the code that makes pedestal table off PFGntuple. The table is saved at the same directory as the nTuple. The usage is  
+`HCALPedestalTableMaker.C` is the code that makes pedestal table off PFGntuple. The table is saved at the same directory as the nTuple.  The usage is  
 ```
 $ root -b -q HCALPedestalTableMaker.C++  
 ```
-You should make a PFGntuple using a local pedestal run first. The following are two useful scripts for analysis of the pedestal measurement.
+Edit lin 692 to your ntuple name.
+```
+line 629: void HCALPedestalTableMaker(TString rootfile="HcalTupleMaker_Local_run354355.root")
+```
+
+You should make a PFGntuple using a local pedestal run first. The following are two useful scripts for analysis of the pedestal measurement. 
 
 Script that compares two pedestal tables and generate a root file with histrogams of comparison: 
 ```
 $ python ped_compare.py [table1.txt] [table2.txt] [output.root]
 ``` 
-You should check if the subdetectors in lines 429 to 520 and the subdetectors in your tables match or not.
+Check if the subdetectors in lines 429 to 520 and the subdetectors in your tables match or not.
 
 Script that visualized a pedestal table or the result of comparison (output file of `ped_compare.py`):
 ```
 $ root -b -q HCALPedestalAnalysis.C++  
 ```
 
-After generating a pedestal table, check if there are missing channels. <br/> You can check it through 2D plots. If there are too many missing channels to interpolate by hand, you can make a list of missing channels and run this code.
+After generating a pedestal table, check if there are missing channels. You can check it through 2D plots. If there are too many missing channels to interpolate by hand, you can make a list of missing channels and run this code.
 ```
 $ python interpolation.py [table.txt] [missing_channels.txt] [output.txt]
 ```
