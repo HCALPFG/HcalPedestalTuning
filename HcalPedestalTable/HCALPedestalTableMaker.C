@@ -1,4 +1,3 @@
-// ------------------------------------------------------------------------------------
 //  ROOT macro that produces a pedestal table from a PFG ntuple
 //
 //  Author : Jae Hyeok Yoo (jae.hyeok.yoo@cern.ch)
@@ -167,24 +166,6 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
   UInt_t   run_ = 0;
   tree->SetBranchAddress("run", &run_);
 
-  // HBHE
-  vector<int>   *HBHEDigiRawID_ = 0;
-  tree->SetBranchAddress("HBHEDigiRawID", &HBHEDigiRawID_);
-  vector<int>   *HBHEDigiSubdet_ = 0;
-  tree->SetBranchAddress("HBHEDigiSubdet", &HBHEDigiSubdet_);
-  vector<int>   *HBHEDigiIEta_ = 0;
-  tree->SetBranchAddress("HBHEDigiIEta", &HBHEDigiIEta_);
-  vector<int>   *HBHEDigiIPhi_ = 0;
-  tree->SetBranchAddress("HBHEDigiIPhi", &HBHEDigiIPhi_);
-  vector<int>   *HBHEDigiDepth_ = 0;
-  tree->SetBranchAddress("HBHEDigiDepth", &HBHEDigiDepth_);
-  vector<vector<int> >   *HBHEDigiCapID_ = 0;
-  tree->SetBranchAddress("HBHEDigiCapID", &HBHEDigiCapID_);
-  vector<vector<float> >   *HBHEDigiNomFC_ = 0; // linearlized ADC count
-  tree->SetBranchAddress("HBHEDigiNomFC", &HBHEDigiNomFC_);
-  vector<vector<float> >   *HBHEDigiADC_ = 0; // unlinearlized ADC count
-  tree->SetBranchAddress("HBHEDigiADC", &HBHEDigiADC_);
-
   // HO  
   vector<int>   *HODigiRawID_ = 0;
   tree->SetBranchAddress("HODigiRawID", &HODigiRawID_);
@@ -204,24 +185,6 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
   tree->SetBranchAddress("HODigiADC", &HODigiADC_);
 
   // HF 
-  vector<int>   *HFDigiRawID_ = 0;
-  tree->SetBranchAddress("HFDigiRawID", &HFDigiRawID_);
-  vector<int>   *HFDigiSubdet_ = 0;
-  tree->SetBranchAddress("HFDigiSubdet", &HFDigiSubdet_);
-  vector<int>   *HFDigiIEta_ = 0;
-  tree->SetBranchAddress("HFDigiIEta", &HFDigiIEta_);
-  vector<int>   *HFDigiIPhi_ = 0;
-  tree->SetBranchAddress("HFDigiIPhi", &HFDigiIPhi_);
-  vector<int>   *HFDigiDepth_ = 0;
-  tree->SetBranchAddress("HFDigiDepth", &HFDigiDepth_);
-  vector<vector<int> >   *HFDigiCapID_ = 0;
-  tree->SetBranchAddress("HFDigiCapID", &HFDigiCapID_);
-  vector<vector<float> >   *HFDigiNomFC_ = 0; // linearlized ADC count
-  tree->SetBranchAddress("HFDigiNomFC", &HFDigiNomFC_);
-  vector<vector<float> >   *HFDigiADC_ = 0; // unlinearlized ADC count
-  tree->SetBranchAddress("HFDigiADC", &HFDigiADC_);
-
-  // QIE10 
   vector<int>   *QIE10DigiRawID_ = 0;
   tree->SetBranchAddress("QIE10DigiRawID", &QIE10DigiRawID_);
   vector<int>   *QIE10DigiSubdet_ = 0;
@@ -236,8 +199,10 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
   tree->SetBranchAddress("QIE10DigiCapID", &QIE10DigiCapID_);
   vector<vector<float> >   *QIE10DigiADC_ = 0; // unlinearlized ADC count
   tree->SetBranchAddress("QIE10DigiADC", &QIE10DigiADC_);
+  vector<vector<float> >   *QIE10DigiFC_ = 0;
+  tree->SetBranchAddress("QIE10DigiFC", &QIE10DigiFC_);
 
-  // QIE11 (HEP17) 
+  // HBHE 
   vector<int>   *QIE11DigiRawID_ = 0;
   tree->SetBranchAddress("QIE11DigiRawID", &QIE11DigiRawID_);
   vector<int>   *QIE11DigiSubdet_ = 0;
@@ -327,31 +292,10 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
   //for(unsigned int ievent = 0; ievent<100; ievent++) 
   {
     tree->GetEntry(ievent); 
-
+    
+    //cout << ievent << endl;
     // Progress indicator 
     if(ievent%100==0) cout << "[HCAL Pedestal table maker] Processed " << ievent << " out of " << nentries << " events" << endl; 
-
-    // Fill HBHE
-    if(SubDetName=="HB" || SubDetName=="HE") 
-    { 
-      for(unsigned int i=0; i<HBHEDigiRawID_->size(); i++) 
-      {
-        if(SubDetName=="HB" && HBHEDigiSubdet_->at(i)!=1) continue;
-        if(SubDetName=="HE" && HBHEDigiSubdet_->at(i)!=2) continue;
-
-        int ieta =  HBHEDigiIEta_->at(i);
-        int iphi =  HBHEDigiIPhi_->at(i);
-        int idepth =  HBHEDigiDepth_->at(i);
-
-        DetId[ieta+41][iphi-1][idepth-1] = HBHEDigiRawID_->at(i);  
-        Subdet[ieta+41][iphi-1][idepth-1] = HBHEDigiSubdet_->at(i);  
-
-        for(unsigned int its=0; its<HBHEDigiCapID_->at(i).size(); its++)  
-        { 
-          h1_ADC[ieta+41][iphi-1][idepth-1][HBHEDigiCapID_->at(i).at(its)]->Fill(HBHEDigiADC_->at(i).at(its)); 
-        }
-      }
-    } 
 
     // Fill HO
     if(SubDetName=="HO") 
@@ -368,25 +312,6 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
         for(unsigned int its=0; its<HODigiCapID_->at(i).size(); its++)  
         { 
           h1_ADC[ieta+41][iphi-1][idepth-1][HODigiCapID_->at(i).at(its)]->Fill(HODigiADC_->at(i).at(its)); 
-        }
-      }
-    } 
-
-    // Fill HF
-    if(SubDetName=="HF") 
-    {
-      for(unsigned int i=0; i<HFDigiRawID_->size(); i++) 
-      {
-        int ieta =  HFDigiIEta_->at(i);
-        int iphi =  HFDigiIPhi_->at(i);
-        int idepth =  HFDigiDepth_->at(i);
-
-        DetId[ieta+41][iphi-1][idepth-1] = HFDigiRawID_->at(i);  
-        Subdet[ieta+41][iphi-1][idepth-1] = HFDigiSubdet_->at(i);  
-
-        for(unsigned int its=0; its<HFDigiCapID_->at(i).size(); its++)  
-        { 
-          h1_ADC[ieta+41][iphi-1][idepth-1][HFDigiCapID_->at(i).at(its)]->Fill((HFDigiADC_->at(i).at(its))); 
         }
       }
     } 
@@ -493,11 +418,11 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
                 maxi=i;
               }
             } 
-            from=1;  
-            if(Subdet[ieta][iphi][idepth]==8 && doEffective) to=256; // For effective PED for QIE11 (Phase1 HE)  
-            else to=maxi+3; 
-            if(Subdet[ieta][iphi][idepth]==8 && to>256) to=256;  
-            else if(to>128) to=128; 
+	    from=1;  
+	    if(Subdet[ieta][iphi][idepth]==8 && doEffective) to=256; // For effective PED for QIE11 (Phase1 HE)  
+	    else to=maxi+3; 
+	    if(Subdet[ieta][iphi][idepth]==8 && to>256) to=256;  
+	    else if(to>128) to=128; 
 
             // peak at ADC=0
             if(maxi==1)
@@ -681,7 +606,8 @@ void HCALPedestalTableMakerSubdet(TString rootfile="../../results.root", TString
 
 
 
-void HCALPedestalTableMakerZDC(TString rootfile="../../results.root", int option=2)
+//void HCALPedestalTableMakerZDC(TString rootfile="../../results.root", int option=2)
+void HCALPedestalTableMakerZDC(TString rootfile="/data/haeyun/hcal/HcalTupleMaker_Local_Example1000to1999.root", int option=2)
 { 
   // File name depending on option
   TString PedestalTable = rootfile;
@@ -763,12 +689,12 @@ void HCALPedestalTableMakerMissingCh(TString rootfile="../../results.root", int 
 
 
 //
-void HCALPedestalTableMaker(TString rootfile="../../HcalTupleMaker_ped_321028.root") 
+void HCALPedestalTableMaker(TString rootfile="HcalTupleMaker_Local_run354355.root")
 {
   HCALPedestalTableMakerSubdet(rootfile, "HB", 2);
   HCALPedestalTableMakerSubdet(rootfile, "HO", 2);
   HCALPedestalTableMakerSubdet(rootfile, "QIE10", 2); // HF
   HCALPedestalTableMakerSubdet(rootfile, "QIE11", 2); // HE
-  HCALPedestalTableMakerZDC(rootfile, 2);
+  HCALPedestalTableMakerZDC(rootfile, 2); //Forwad region
   HCALPedestalTableMakerMissingCh(rootfile, 2);
 }
