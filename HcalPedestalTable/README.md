@@ -1,6 +1,6 @@
 # HcalPedestalTuning/HcalPedestalTable 
 
-`HCALPedestalTableMaker.C` is the code that makes pedestal table off PFGntuple. The table is saved at the same directory as nTuple. The usage is  
+`HCALPedestalTableMaker.C` is the code that makes pedestal table off PFGntuple. The table is saved at the same directory as the nTuple. The usage is  
 ```
 $ root -b -q HCALPedestalTableMaker.C++  
 ```
