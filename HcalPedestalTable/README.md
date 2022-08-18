@@ -10,18 +10,18 @@ Script that compares two pedestal tables and generate a root file with histrogam
 ```
 $ python ped_compare.py [table1.txt] [table2.txt] [output.root]
 ``` 
-You should check if the subdetectors in the code(line 429 ~520) and your table match or not.
+You should check if the subdetectors in lines 429 to 520 and the subdetectors in your tables match or not.
 
 Script that visualized a pedestal table or the result of comparison (output file of `ped_compare.py`):
 ```
 $ root -b -q HCALPedestalAnalysis.C++  
 ```
 
-After generating a pedestal table, check if there are missing channels. <br/> You can check it through 2D plots, output files of `HCALPedestalAnalysis.C++`. If there are too many missing channels to interpolate by hand, you can make a list of missing channels and run this code.
+After generating a pedestal table, check if there are missing channels. <br/> You can check it through 2D plots. If there are too many missing channels to interpolate by hand, you can make a list of missing channels and run this code.
 ```
 $ python interpolation.py [table.txt] [missing_channels.txt] [output.txt]
 ```
-It returns the average means/width of surrounding channels as means/widths for these channels. The `missing_channels.txt` should follow the format below. 
+It returns the average means/width of surrounding channels as means/widths for missing channels. The `missing_channels.txt` should follow the format below. 
 ```
 #U ADC  << this is the unit
 #             eta             phi             dep             det     cap0     cap1     cap2     cap3 widthcap0 widthcap1 widthcap2 widthcap3      DetId
