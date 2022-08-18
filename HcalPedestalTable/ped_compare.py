@@ -175,7 +175,7 @@ def parse(fileName, subs):
         sub = v[3]
 
         #   Throw away channels that are not needed
-        if sub!="HB" and sub!="HE" and sub!="HO" and sub!="HF" and sub!="QIE11":
+        if  sub!="HB" and sub!="HE" and sub!="HO" and sub!="HF" and sub!="QIE11":
             continue
 
         #   Get Means
@@ -198,7 +198,8 @@ def parse(fileName, subs):
         print "%d"% depth
 
         #   Add this channel to the proper subsytem
-        subs[sub].addCh(ieta, iphi, depth, means, rmss, rawId)
+	if sub == "HE":
+		subs[sub].addCh(ieta, iphi, depth, means, rmss, rawId)
 
 #------------------------------------------
 #   Define a StatsMaker Class
@@ -344,24 +345,39 @@ class StatsMaker:
                     if abs(sub1.chs[iiphi][iieta][id].means[3]-sub2.chs[iiphi][iieta][id].means[3]) > 1.:
                         print "ieta=%d iphi=%d depth=%d capid=3" % (sub1.ieta(iieta), sub1.iphi(iiphi), id)
 
-                    rm0 = (sub1.chs[iiphi][iieta][id].means[0] /
-                            sub2.chs[iiphi][iieta][id].means[0])
-                    rm1 = (sub1.chs[iiphi][iieta][id].means[1] /
-                            sub2.chs[iiphi][iieta][id].means[1])
-                    rm2 = (sub1.chs[iiphi][iieta][id].means[2] /
-                            sub2.chs[iiphi][iieta][id].means[2])
-                    rm3 = (sub1.chs[iiphi][iieta][id].means[3] /
-                            sub2.chs[iiphi][iieta][id].means[3])
-                    rr0 = (sub1.chs[iiphi][iieta][id].rmss[0] /
-                            sub2.chs[iiphi][iieta][id].rmss[0])
-                    rr1 = (sub1.chs[iiphi][iieta][id].rmss[1] /
-                            sub2.chs[iiphi][iieta][id].rmss[1])
-                    rr2 = (sub1.chs[iiphi][iieta][id].rmss[2] /
-                            sub2.chs[iiphi][iieta][id].rmss[2])
-                    rr3 = (sub1.chs[iiphi][iieta][id].rmss[3] /
-                            sub2.chs[iiphi][iieta][id].rmss[3])
-                    rraw = (sub1.chs[iiphi][iieta][id].rawId /
-                            sub2.chs[iiphi][iieta][id].rawId)
+                    if (sub2.chs[iiphi][iieta][id].means[0] != 0 and sub2.chs[iiphi][iieta][id].means[1] and sub2.chs[iiphi][iieta][id].means[2] != 0 and sub2.chs[iiphi][iieta][id].means[3] ):
+                        rm0 = (sub1.chs[iiphi][iieta][id].means[0] /
+                                sub2.chs[iiphi][iieta][id].means[0])
+                        rm1 = (sub1.chs[iiphi][iieta][id].means[1] /
+                                sub2.chs[iiphi][iieta][id].means[1])
+                        rm2 = (sub1.chs[iiphi][iieta][id].means[2] /
+                                sub2.chs[iiphi][iieta][id].means[2])
+                        rm3 = (sub1.chs[iiphi][iieta][id].means[3] /
+                                sub2.chs[iiphi][iieta][id].means[3])
+                    else:
+                        rm0 = -999
+                        rm1 = -999
+                        rm2 = -999
+                        rm3 = -999
+
+                    if (sub2.chs[iiphi][iieta][id].rmss[0] != 0 and sub2.chs[iiphi][iieta][id].rmss[1] and sub2.chs[iiphi][iieta][id].rmss[2] != 0 and sub2.chs[iiphi][iieta][id].rmss[3] ):
+                        rr0 = (sub1.chs[iiphi][iieta][id].rmss[0] /
+                                sub2.chs[iiphi][iieta][id].rmss[0])
+                        rr1 = (sub1.chs[iiphi][iieta][id].rmss[1] /
+                                sub2.chs[iiphi][iieta][id].rmss[1])
+                        rr2 = (sub1.chs[iiphi][iieta][id].rmss[2] /
+                                sub2.chs[iiphi][iieta][id].rmss[2])
+                        rr3 = (sub1.chs[iiphi][iieta][id].rmss[3] /
+                                sub2.chs[iiphi][iieta][id].rmss[3])
+                        rraw = (sub1.chs[iiphi][iieta][id].rawId /
+                                sub2.chs[iiphi][iieta][id].rawId)
+                    else:
+                        rr0 = -999
+                        rr1 = -999
+                        rr2 = -999
+                        rr3 = -999                    
+
+
                     self.__hm_diff.Fill(sub1.chs[iiphi][iieta][id].means[0]
                                         +sub1.chs[iiphi][iieta][id].means[1]
                                         +sub1.chs[iiphi][iieta][id].means[2]
@@ -480,8 +496,8 @@ verbosity = 0
 #------------------------------------------
 #HF1 = HcalSubsystem("HF", 29, 41, 1, 71, 2, 1, 4, verbosity)
 #HF2 = HcalSubsystem("HF", 29, 41, 1, 71, 2, 1, 4, verbosity)
-#HB1 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
-#HB2 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
+HB1 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
+HB2 = HcalSubsystem("HB", 1, 16, 1, 72, 1, 1, 2, verbosity)
 #QIE111 = HcalSubsystem("QIE11", 16, 29, 1, 72, 1, 1, 7, verbosity)
 #QIE112 = HcalSubsystem("QIE11", 16, 29, 1, 72, 1, 1, 7, verbosity)
 HE1 = HcalSubsystem("HE", 16, 29, 1, 72, 1, 1, 7, verbosity)
@@ -491,10 +507,10 @@ HE2 = HcalSubsystem("HE", 16, 29, 1, 72, 1, 1, 7, verbosity)
 
 #subs1 = {"HB" : HB1, "HE" : HE1, "HO" : HO1, "HF" : HF1, "QIE11" : QIE111}
 #subs2 = {"HB" : HB2, "HE" : HE2, "HO" : HO2, "HF" : HF2, "QIE11" : QIE112}
-subs1 = {"HE" : HE1}
-subs2 = {"HE" : HE2}
+subs1 = {"HE" : HE1, "HB" : HB1}
+subs2 = {"HE" : HE2, "HB" : HB2}
 
-#smHB = StatsMaker(rootFile, "HB")
+smHB = StatsMaker(rootFile, "HB")
 smHE = StatsMaker(rootFile, "HE")
 #smHO = StatsMaker(rootFile, "HO")
 #smHF = StatsMaker(rootFile, "HF")
@@ -505,7 +521,7 @@ smHE = StatsMaker(rootFile, "HE")
 #------------------------------------------
 parse(fileName1, subs1)
 parse(fileName2, subs2)
-#smHB.makeStats(subs1["HB"], subs2["HB"])
+smHB.makeStats(subs1["HB"], subs2["HB"])
 smHE.makeStats(subs1["HE"], subs2["HE"])
 #smHO.makeStats(subs1["HO"], subs2["HO"])
 #smHF.makeStats(subs1["HF"], subs2["HF"])
